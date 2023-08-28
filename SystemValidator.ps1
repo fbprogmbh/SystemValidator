@@ -497,7 +497,7 @@ function Create-HTMLBody {
         htmlElement 'h1' @{} { "SystemValidator $($version)" }
         htmlElement 'h2' @{} { "System information" }
         $v = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
-        $infos = Get-CimInstance Win32_OperatingSystem
+        $infos = Get-CimInstance Win32_OperatingSystem     
         $uptime = (get-date) - (gcim Win32_OperatingSystem).LastBootUpTime
         $licenseStatus = (Get-CimInstance SoftwareLicensingProduct -Filter "Name like 'Windows%'" | where { $_.PartialProductKey } | select Description, LicenseStatus -ExpandProperty LicenseStatus)
         switch ($licenseStatus) {
@@ -517,6 +517,7 @@ function Create-HTMLBody {
             "4"	{ "Backup Domain Controller" }
             "5"	{ "Primary Domain Controller" }
         }
+        Write-Host "Fetching system information"
         $disk = Get-CimInstance Win32_LogicalDisk | Where-Object -Property DeviceID -eq "C:"
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -538,6 +539,7 @@ function Create-HTMLBody {
             }
         }
         #PSVersionTable
+        Write-Host "Fetching PowerShell information"
         htmlElement 'h2' @{} { "PowerShell" }
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -568,6 +570,7 @@ function Create-HTMLBody {
         }
 
         #DSCLocalConfigurationManager
+        Write-Host "Fetching DSC information"
         htmlElement 'h2' @{} { "DSCLocalConfigurationManager" }
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -592,6 +595,7 @@ function Create-HTMLBody {
             }
         }
 
+        Write-Host "Fetching DSC Status information"
         htmlElement 'h3' @{} { "DSC Status" }
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -627,6 +631,7 @@ function Create-HTMLBody {
         }
 
         
+        Write-Host "Fetching User Right Assignements"
         htmlElement 'h2' @{} { "User Right Assignements" }
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -649,6 +654,7 @@ function Create-HTMLBody {
 
 
         #WinRM
+        Write-Host "Fetching WinRM information"
         htmlElement 'h2' @{} { "WinRM" }
         #WSMan Check
         htmlElement 'table' @{} {
@@ -710,6 +716,7 @@ function Create-HTMLBody {
         }
 
         #Public network profiles
+        Write-Host "Fetching Network Configurations"
         htmlElement 'h2' @{} { "Network Configuration" }
         htmlElement 'h3' @{} { "Network Profile Configuration" }
         htmlElement 'table' @{} {
@@ -728,6 +735,7 @@ function Create-HTMLBody {
                 ConfigurationCheck "IPv6Connectivity" $info.IPv6Connectivity "info" ""
             }
         }
+        Write-Host "Fetching Proxy Configurations"
         htmlElement 'h3' @{} { "Proxy Configuration" }
         htmlElement 'table' @{} {
             htmlElement 'tbody' @{} {
@@ -737,6 +745,7 @@ function Create-HTMLBody {
 
 
         #PSSessionConfiguration
+        Write-Host "Fetching PSSessionConfiguration"
         htmlElement 'h2' @{} { "PSSessionConfiguration" }
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -764,6 +773,7 @@ function Create-HTMLBody {
 
 
         #Windows Defender Configuration
+        Write-Host "Fetching Defender Configurations"
         htmlElement 'h2' @{} { "Windows Defender Configuration" }
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
