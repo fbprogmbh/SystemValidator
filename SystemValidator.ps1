@@ -364,8 +364,8 @@ function ConfigurationCheck {
     }
     htmlElement 'tr' @{} {
         htmlElement 'td' @{} { $check }
-        htmlElement 'td' @{} { $currentConfig }
         htmlElement 'td' @{} { $targetConfig }
+        htmlElement 'td' @{} { $currentConfig }
         if ($result -eq "Compliant") {
             htmlElement 'td' @{class = "Compliant" } { $result }
         }
@@ -478,8 +478,8 @@ function Create-Table {
         htmlElement 'thead' @{} {
             htmlElement 'tr' @{} {
                 htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                 htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                 htmlElement 'th' @{class = "informationRow" } { "Result" }
             }
         }
@@ -543,8 +543,8 @@ function Create-HTMLBody {
             htmlElement 'thead' @{} {
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Result" }
                 }
             }
@@ -573,8 +573,8 @@ function Create-HTMLBody {
             htmlElement 'thead' @{} {
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Result" }
                 }
             }
@@ -597,8 +597,8 @@ function Create-HTMLBody {
             htmlElement 'thead' @{} {
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Result" }
                 }
             }
@@ -632,8 +632,8 @@ function Create-HTMLBody {
             htmlElement 'thead' @{} {
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Result" }
                 }
             }
@@ -655,8 +655,8 @@ function Create-HTMLBody {
             htmlElement 'thead' @{} {
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow"; style = "padding-right: 161px;" } { "WSMan Check" }
-                    htmlElement 'th' @{class = "informationRow"; style = "padding-left: 77px;" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                    htmlElement 'th' @{class = "informationRow"; style = "padding-left: 77px;" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Result" }
                 }
             }
@@ -675,8 +675,8 @@ function Create-HTMLBody {
             htmlElement 'thead' @{} {
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow" } { "Service Check" }
-                    htmlElement 'th' @{class = "informationRow"; style = "padding-left: 48px;" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                    htmlElement 'th' @{class = "informationRow"; style = "padding-left: 48px;" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Result" }
                 }
             }
@@ -696,8 +696,8 @@ function Create-HTMLBody {
             htmlElement 'thead' @{} {
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Result" }
                 }
             }         
@@ -716,8 +716,8 @@ function Create-HTMLBody {
             htmlElement 'thead' @{} {
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Result" }
                 }
             }
@@ -742,8 +742,8 @@ function Create-HTMLBody {
             htmlElement 'thead' @{} {
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Result" }
                 }
             }
@@ -769,8 +769,8 @@ function Create-HTMLBody {
             htmlElement 'thead' @{} {
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
                     htmlElement 'th' @{class = "informationRow" } { "Result" }
                 }
             }
