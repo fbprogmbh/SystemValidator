@@ -416,7 +416,7 @@ function Create-HTMLHead {
         htmlElement 'meta' @{ charset = 'UTF-8' } { }
         htmlElement 'meta' @{ name = 'viewport'; content = 'width=device-width, initial-scale=1.0' } { }
         htmlElement 'meta' @{ 'http-equiv' = 'X-UA-Compatible'; content = 'ie=edge' } { }
-        htmlElement 'title' @{} { "Endpoint_Validator [$(Get-Date)]" }
+        htmlElement 'title' @{} { "System_Validator [$(Get-Date)]" }
         htmlElement 'style' @{} {
             ".informationRow{
                 padding-right: 200px;
@@ -875,7 +875,7 @@ function Create-HTMLBody {
     Write-Host "Done"
     return $body
 }
-$Path = "C:\Temp\EndpointValidatorOutput.html"
+$Path = "C:\Temp\SystemValidatorOutput.html"
 if (!(isAdmin)) {
     [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
     [System.Windows.Forms.MessageBox]::Show("Please run as administrator", "Insufficient permisions", 0, [System.Windows.Forms.MessageBoxIcon]::Error)
