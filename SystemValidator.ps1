@@ -497,7 +497,7 @@ function Create-HTMLBody {
         htmlElement 'h1' @{} { "SystemValidator $($version)" }
         htmlElement 'h2' @{} { "System information" }
         $v = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
-        $infos = Get-CimInstance Win32_OperatingSystem     
+        $infos = Get-CimInstance Win32_OperatingSystem
         $uptime = (get-date) - (gcim Win32_OperatingSystem).LastBootUpTime
         $licenseStatus = (Get-CimInstance SoftwareLicensingProduct -Filter "Name like 'Windows%'" | where { $_.PartialProductKey } | select Description, LicenseStatus -ExpandProperty LicenseStatus)
         switch ($licenseStatus) {
