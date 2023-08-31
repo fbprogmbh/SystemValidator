@@ -891,7 +891,7 @@ if (!(isAdmin)) {
     [System.Windows.Forms.MessageBox]::Show("Please run as administrator", "Insufficient permisions", 0, [System.Windows.Forms.MessageBoxIcon]::Error)
 }
 else {
-    Write-Host "Saving Report..."
+    Write-Host "Initializing..."
     #If Path exists to a folder exists
     if ($Path -match ".html") {
         $name = Split-Path -Path $Path -Leaf
