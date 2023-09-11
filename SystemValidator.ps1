@@ -1,8 +1,33 @@
 #SystemValidator Version
-$version = "1.0"
+$version = "1.0.1"
 function isAdmin {
     return ([Security.Principal.WindowsIdentity]::GetCurrent().Groups -contains 'S-1-5-32-544')
 }
+
+
+function Get-Event{
+    param(
+        [System.Diagnostics.Eventing.Reader.EventLogRecord] $event
+    )
+    if ($event.Id -eq 1002 -or $event.Id -eq 300 -or $event.Id -eq 2001 -or $event.Id -eq 4252) {
+        return;
+    }
+    htmlElement 'tr' @{} {
+        htmlElement 'td' @{} { $event.TimeCreated }
+        htmlElement 'td' @{} { $event.Id }
+        htmlElement 'td' @{} { $event.LevelDisplayName }
+        if($event.LevelDisplayName -eq "Warning"){
+            htmlElement 'td' @{style = "background-color: yellow;" } { $event.Message }
+        }
+        if($event.LevelDisplayName -eq "Error"){
+            htmlElement 'td' @{style = "background-color: orange;" } { $event.Message }
+        }
+        if($event.LevelDisplayName -eq "Critical"){
+            htmlElement 'td' @{style = "background-color: red;" } { $event.Message }
+        }
+    }
+}
+
 
 function Get-LogsByLogName {
     param (
@@ -16,32 +41,22 @@ function Get-LogsByLogName {
     $eventPS = Get-WinEvent -FilterHashtable $args
     $warningEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Warning" }
     $errorEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Error" }
-    if ($warningEvents.Length + $errorEvents.Length -eq 0) {
+    $criticalEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Critical" }
+    if ($warningEvents.Length + $errorEvents.Length + $criticalEvents.Length -eq 0 ) {
         return;
     }
     foreach ($event in $warningEvents) {
-        if ($event.Id -eq 1002 -or $event.Id -eq 300 -or $event.Id -eq 2001 -or $event.Id -eq 4252) {
-            continue;
-        }
-        htmlElement 'tr' @{} {
-            htmlElement 'td' @{} { $event.TimeCreated }
-            htmlElement 'td' @{} { $event.Id }
-            htmlElement 'td' @{} { $event.LevelDisplayName }
-            htmlElement 'td' @{style = "background-color: orange;" } { $event.Message }
-        }
+        Get-Event $event
     }
     foreach ($event in $errorEvents) {
-        if ($event.Id -eq 1002 -or $event.Id -eq 300 -or $event.Id -eq 2001 -or $event.Id -eq 4252) {
-            continue;
-        }
-        htmlElement 'tr' @{} {
-            htmlElement 'td' @{} { $event.TimeCreated }
-            htmlElement 'td' @{} { $event.Id }
-            htmlElement 'td' @{} { $event.LevelDisplayName }
-            htmlElement 'td' @{style = "background-color: red;" } { $event.Message }
-        }
+        Get-Event $event
+    }
+    foreach ($event in $criticalEvents) {
+        Get-Event $event
     }
 }
+
+
 
 function Get-LogCountByName {
     param (
@@ -55,6 +70,7 @@ function Get-LogCountByName {
     $eventPS = Get-WinEvent -FilterHashtable $args
     $warningEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Warning" }
     $errorEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Error" }
+    $criticalEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Critical" }
     $sum = 0
     foreach ($event in $warningEvents) {
         if ($event.Id -eq 1002 -or $event.Id -eq 300 -or $event.Id -eq 2001 -or $event.Id -eq 4252) {
@@ -68,7 +84,13 @@ function Get-LogCountByName {
         }
         $sum += 1
     }
-    if ($warningEvents.Length + $errorEvents.Length -eq 0) {
+    foreach ($event in $criticalEvents) {
+        if ($event.Id -eq 1002 -or $event.Id -eq 300 -or $event.Id -eq 2001 -or $event.Id -eq 4252) {
+            continue;
+        }
+        $sum += 1
+    }
+    if ($warningEvents.Length + $errorEvents.Length + $criticalEvents.Length -eq 0) {
         return "No Logs found.";
     }
     return $sum
