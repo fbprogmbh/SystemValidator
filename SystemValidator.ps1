@@ -517,6 +517,7 @@ function Create-HTMLBody {
             "4"	{ "Backup Domain Controller" }
             "5"	{ "Primary Domain Controller" }
         }
+        Write-Host "Fetching system information"
         $disk = Get-CimInstance Win32_LogicalDisk | Where-Object -Property DeviceID -eq "C:"
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -538,6 +539,7 @@ function Create-HTMLBody {
             }
         }
         #PSVersionTable
+        Write-Host "Fetching PowerShell information"
         htmlElement 'h2' @{} { "PowerShell" }
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -568,6 +570,7 @@ function Create-HTMLBody {
         }
 
         #DSCLocalConfigurationManager
+        Write-Host "Fetching DSC LCM information"
         htmlElement 'h2' @{} { "DSCLocalConfigurationManager" }
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -592,6 +595,7 @@ function Create-HTMLBody {
             }
         }
 
+        Write-Host "Fetching DSC Configuration Status information"
         htmlElement 'h3' @{} { "DSC Status" }
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -627,6 +631,7 @@ function Create-HTMLBody {
         }
 
         
+        Write-Host "Fetching User Right Assignements"
         htmlElement 'h2' @{} { "User Right Assignements" }
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -649,6 +654,7 @@ function Create-HTMLBody {
 
 
         #WinRM
+        Write-Host "Fetching WinRM Configuration"
         htmlElement 'h2' @{} { "WinRM" }
         #WSMan Check
         htmlElement 'table' @{} {
@@ -710,6 +716,7 @@ function Create-HTMLBody {
         }
 
         #Public network profiles
+        Write-Host "Fetching Network Configuration"
         htmlElement 'h2' @{} { "Network Configuration" }
         htmlElement 'h3' @{} { "Network Profile Configuration" }
         htmlElement 'table' @{} {
@@ -728,6 +735,7 @@ function Create-HTMLBody {
                 ConfigurationCheck "IPv6Connectivity" $info.IPv6Connectivity "info" ""
             }
         }
+        Write-Host "Fetching Proxy Configuration"
         htmlElement 'h3' @{} { "Proxy Configuration" }
         htmlElement 'table' @{} {
             htmlElement 'tbody' @{} {
@@ -737,6 +745,7 @@ function Create-HTMLBody {
 
 
         #PSSessionConfiguration
+        Write-Host "Fetching PSSessionConfiguration"
         htmlElement 'h2' @{} { "PSSessionConfiguration" }
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -764,6 +773,7 @@ function Create-HTMLBody {
 
 
         #Windows Defender Configuration
+        Write-Host "Fetching Microsoft Defender Configuration"
         htmlElement 'h2' @{} { "Windows Defender Configuration" }
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
@@ -810,7 +820,7 @@ function Create-HTMLBody {
             }
         }
 
-        Write-Host "Fetching Event Logs - Windows Defender"
+        Write-Host "Fetching Event Logs - Microsoft Defender"
         htmlElement 'h3' @{} { "Event Logs - Windows Defender: $(Get-LogCountByName "Microsoft-Windows-Windows Defender/Operational")" }
         htmlElement 'label' @{for = "toggle" } { "Event Logs - Windows Defender" }
         htmlElement 'input' @{type = "checkbox"; id = "toggleWindowsDefender" } {}
@@ -881,7 +891,7 @@ if (!(isAdmin)) {
     [System.Windows.Forms.MessageBox]::Show("Please run as administrator", "Insufficient permisions", 0, [System.Windows.Forms.MessageBoxIcon]::Error)
 }
 else {
-    Write-Host "Fetching information, please wait..."
+    Write-Host "Initializing..."
     #If Path exists to a folder exists
     if ($Path -match ".html") {
         $name = Split-Path -Path $Path -Leaf
