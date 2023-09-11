@@ -16,7 +16,8 @@ function Get-LogsByLogName {
     $eventPS = Get-WinEvent -FilterHashtable $args
     $warningEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Warning" }
     $errorEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Error" }
-    if ($warningEvents.Length + $errorEvents.Length -eq 0) {
+    $criticalEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Critical" }
+    if ($warningEvents.Length + $errorEvents.Length + $criticalEvents.Length -eq 0 ) {
         return;
     }
     foreach ($event in $warningEvents) {
@@ -27,10 +28,21 @@ function Get-LogsByLogName {
             htmlElement 'td' @{} { $event.TimeCreated }
             htmlElement 'td' @{} { $event.Id }
             htmlElement 'td' @{} { $event.LevelDisplayName }
-            htmlElement 'td' @{style = "background-color: orange;" } { $event.Message }
+            htmlElement 'td' @{style = "background-color: yellow;" } { $event.Message }
         }
     }
     foreach ($event in $errorEvents) {
+        if ($event.Id -eq 1002 -or $event.Id -eq 300 -or $event.Id -eq 2001 -or $event.Id -eq 4252) {
+            continue;
+        }
+        htmlElement 'tr' @{} {
+            htmlElement 'td' @{} { $event.TimeCreated }
+            htmlElement 'td' @{} { $event.Id }
+            htmlElement 'td' @{} { $event.LevelDisplayName }
+            htmlElement 'td' @{style = "background-color: orange;" } { $event.Message }
+        }
+    }
+    foreach ($event in $criticalEvents) {
         if ($event.Id -eq 1002 -or $event.Id -eq 300 -or $event.Id -eq 2001 -or $event.Id -eq 4252) {
             continue;
         }
@@ -55,6 +67,7 @@ function Get-LogCountByName {
     $eventPS = Get-WinEvent -FilterHashtable $args
     $warningEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Warning" }
     $errorEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Error" }
+    $criticalEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Critical" }
     $sum = 0
     foreach ($event in $warningEvents) {
         if ($event.Id -eq 1002 -or $event.Id -eq 300 -or $event.Id -eq 2001 -or $event.Id -eq 4252) {
@@ -68,7 +81,13 @@ function Get-LogCountByName {
         }
         $sum += 1
     }
-    if ($warningEvents.Length + $errorEvents.Length -eq 0) {
+    foreach ($event in $criticalEvents) {
+        if ($event.Id -eq 1002 -or $event.Id -eq 300 -or $event.Id -eq 2001 -or $event.Id -eq 4252) {
+            continue;
+        }
+        $sum += 1
+    }
+    if ($warningEvents.Length + $errorEvents.Length + $criticalEvents.Length -eq 0) {
         return "No Logs found.";
     }
     return $sum
