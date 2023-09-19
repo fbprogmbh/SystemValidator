@@ -378,7 +378,421 @@ function ConfigurationCheck {
     }
 }
 
-###### HTML Functions ######
+
+
+###############################################################################################
+###################################### Section Functions ######################################
+########################################### BEGIN #############################################
+function Show-Section_SystemInformation {
+    htmlElement 'h1' @{} { "SystemValidator $($version)" }
+    htmlElement 'h2' @{} { "System information" }
+    $v = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+    $infos = Get-CimInstance Win32_OperatingSystem
+    $uptime = (get-date) - (gcim Win32_OperatingSystem).LastBootUpTime
+    $licenseStatus = (Get-CimInstance SoftwareLicensingProduct -Filter "Name like 'Windows%'" | where { $_.PartialProductKey } | select Description, LicenseStatus -ExpandProperty LicenseStatus)
+    switch ($licenseStatus) {
+        "0" { $lcStatus = "Unlicensed" }
+        "1" { $lcStatus = "Licensed" }
+        "2" { $lcStatus = "OOBGrace" }
+        "3" { $lcStatus = "OOTGrace" }
+        "4" { $lcStatus = "NonGenuineGrace" }
+        "5" { $lcStatus = "Notification" }
+        "6" { $lcStatus = "ExtendedGrace" }
+    }
+    $role = Switch ((Get-CimInstance -Class Win32_ComputerSystem).DomainRole) {
+        "0"	{ "Standalone Workstation" }
+        "1"	{ "Member Workstation" }
+        "2"	{ "Standalone Server" }
+        "3"	{ "Member Server" }
+        "4"	{ "Backup Domain Controller" }
+        "5"	{ "Primary Domain Controller" }
+    }
+    Write-Host "Fetching system information"
+    $disk = Get-CimInstance Win32_LogicalDisk | Where-Object -Property DeviceID -eq "C:"
+    htmlElement 'table' @{} {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
+            }
+        }
+        htmlElement 'tbody' @{} {
+            ConfigurationCheck "Hostname" $(hostname) "" ""
+            ConfigurationCheck "Date" $(Get-Date) "" ""
+            ConfigurationCheck "System Uptime" $('{0:d1}:{1:d2}:{2:d2}:{3:d2}' -f $uptime.Days, $uptime.Hours, $uptime.Minutes, $uptime.Seconds) "" ""
+            ConfigurationCheck "Operating System" $($infos.Caption) "" ""
+            ConfigurationCheck "System Type" $((Get-WmiObject win32_operatingsystem | select osarchitecture).osarchitecture) "" ""
+            ConfigurationCheck "Build Number" ('Version {0} (Build {1}.{2})' -f $v.DisplayVersion, $v.CurrentBuildNumber, $v.UBR) "" ""
+            ConfigurationCheck "Installation Language" $((Get-UICulture).DisplayName) "" ""
+            ConfigurationCheck "Domain role" $($role) "" ""
+            ConfigurationCheck "Free disk space" $("{0:N1} GB" -f ($disk.FreeSpace / 1GB)) "" ""
+            ConfigurationCheck "License Status" $($lcStatus) "" ""
+        }
+    }
+}
+
+
+
+
+
+function Show-Section_WindowsDefenderConfiguration {
+    htmlElement 'h2' @{} { "Windows Defender Configuration" }
+    htmlElement 'table' @{} {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
+                htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Result" }
+            }
+        }
+        $asrStatus = Get-ASRStatus
+        htmlElement 'tbody' @{} {
+            ConfigurationCheck "Windows Defender enabled" $((Get-MpComputerStatus).AntivirusEnabled) "eq" "True"
+            ConfigurationCheck "ASR Rules enabled" $($asrStatus) "info" ""
+            #if ASR rules are enabled
+            if ($asrStatus -eq "True") {
+                #get list of active ASR rules
+                foreach ($rule in Get-MPPreference | Select-Object -ExpandProperty AttackSurfaceReductionRules_Ids) {
+                    if ($rule -match "e6db77e5-3df2-4cf1-b95a-636979351e5b") { ConfigurationCheck "Active ASR Rule" $(Get-ASRRuleNameByID $rule) "eq" "False"; continue; }
+                    if ($rule -match "d1e49aac-8f56-4280-b9ba-993a6d77406c") { ConfigurationCheck "Active ASR Rule" $(Get-ASRRuleNameByID $rule) "eq" "False"; continue; }
+                    ConfigurationCheck "Active ASR Rule" $(Get-ASRRuleNameByID $rule) "info" ""
+                }
+            }
+        }
+    }
+}
+
+function Show-Section_PowerShellInformation {
+    htmlElement 'h2' @{} { "PowerShell" }
+    htmlElement 'table' @{} {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
+                htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Result" }
+            }
+        }
+        htmlElement 'tbody' @{} {
+            $psVTable = $psversiontable
+            $policies = (Get-ExecutionPolicy -List)
+            ConfigurationCheck "PSVersion" $psVTable.PSVersion "ge" "5.1"
+            ConfigurationCheck "PSEdition" $psVTable.PSEdition "info" ""
+            ConfigurationCheck "BuildVersion" $psVTable.BuildVersion "info" ""
+            ConfigurationCheck "CLRVersion" $psVTable.CLRVersion "info" ""
+            ConfigurationCheck "WSManStackVersion" $psVTable.WSManStackVersion "info" ""
+            ConfigurationCheck "PSRemotingProtocolVersion" $psVTable.PSRemotingProtocolVersion "info" ""
+            ConfigurationCheck "SerializationVersion" $psVTable.SerializationVersion "info" ""
+            ConfigurationCheck "(Effective ExecutionPolicy) ExecutionPolicy" $(Get-ExecutionPolicy) "eq" "RemoteSigned"
+            ConfigurationCheck "(ExecutionPolicy) MachinePolicy" $($policies[0].ExecutionPolicy) "info" ""
+            ConfigurationCheck "(ExecutionPolicy) UserPolicy" $($policies[1].ExecutionPolicy) "info" ""
+            ConfigurationCheck "(ExecutionPolicy) Process" $($policies[2].ExecutionPolicy) "info" ""
+            ConfigurationCheck "(ExecutionPolicy) CurrentUser" $($policies[3].ExecutionPolicy) "info" ""
+            ConfigurationCheck "(ExecutionPolicy) LocalMachine" $($policies[4].ExecutionPolicy) "info" ""
+        }
+    }
+}
+
+
+function Show-Section_DSC_LCM_Configuration {
+    htmlElement 'h2' @{} { "DSCLocalConfigurationManager" }
+    htmlElement 'table' @{} {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
+                htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Result" }
+            }
+        }
+        htmlElement 'tbody' @{} {
+            $lcmConfigs = Get-DscLocalConfigurationManager
+            ConfigurationCheck "RefreshMode" $lcmConfigs.RefreshMode "eq" "Push"
+            ConfigurationCheck "ActionAfterReboot" $lcmConfigs.ActionAfterReboot "info" ""
+            ConfigurationCheck "ConfigurationMode" $lcmConfigs.ConfigurationMode "info" ""
+            ConfigurationCheck "LCMState" $lcmConfigs.LCMState "info" ""
+            ConfigurationCheck "ConfigurationModeFrequencyMins" $lcmConfigs.ConfigurationModeFrequencyMins "info" ""
+            ConfigurationCheck "StatusRetentionTimeInDays" $lcmConfigs.StatusRetentionTimeInDays "info" ""
+            ConfigurationCheck "RebootNodeIfNeeded" $lcmConfigs.RebootNodeIfNeeded "info" ""
+            ConfigurationCheck "RefreshFrequencyMins" $lcmConfigs.RefreshFrequencyMins "info" ""
+            ConfigurationCheck "AllowModuleOverWrite" $lcmConfigs.AllowModuleOverWrite "info" ""
+        }
+    }
+}
+
+
+function Show-Section_DSCConfigurationStatus {
+    htmlElement 'h3' @{} { "DSC Status" }
+    htmlElement 'table' @{} {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
+                htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Result" }
+            }
+        }
+        $ConfigurationStatusSize = ((Get-ChildItem  -Path "C:\Windows\System32\Configuration\ConfigurationStatus" | measure Length -s).sum / 1Mb).ToString(".##")
+        #Skip if DSC-ConfigurationManager Refresh Mode is "Disabled"
+        $dscStatus = $null
+        $lcmConfigs = Get-DscLocalConfigurationManager
+        if ($lcmConfigs.RefreshMode -ne "Disabled") {
+            while ($lcmConfigs.LCMStateDetail -ne "") {
+                Start-Sleep -Seconds 20
+                Write-Host "LCM is in status '$($lcmConfigs.LCMStateDetail)', waiting..."
+                $lcmConfigs = Get-DscLocalConfigurationManager
+            }
+            Test-DscConfiguration
+            $dscStatus = Get-DscConfigurationStatus
+        }
+        htmlElement 'tbody' @{} {
+            ConfigurationCheck "ConfigurationStatus-Folder Size (MB)" $ConfigurationStatusSize "info" ""
+            if ($null -eq $dscStatus) {
+                ConfigurationCheck "DSC Status" "null" "eq" "null"
+            }
+            else {
+                ConfigurationCheck "DSC Status" "DSC configuration already exists" "eq" "null"
+            }
+        }
+    }
+}
+
+function Show-Section_UserRightAssignements {
+    htmlElement 'h2' @{} { "User Right Assignements" }
+    htmlElement 'table' @{} {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
+                htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Result" }
+            }
+        }
+
+        $securityPolicy = Get-AuditResource "WindowsSecurityPolicy"
+        $currentUserRightsSeNetworkLogonRight = $securityPolicy["Privilege Rights"]["SeNetworkLogonRight"]
+        htmlElement 'tbody' @{} {
+            foreach ($user in $currentUserRightsSeNetworkLogonRight) {
+                ConfigurationCheck "SeNetworkLogonRight" $($user.Account) "info" ""
+            }
+        }
+    }
+}
+
+function Show-Section_WinRM_Configuration {
+    htmlElement 'h2' @{} { "WinRM" }
+    #WSMan Check
+    htmlElement 'table' @{} {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow"; style = "padding-right: 161px;" } { "WSMan Check" }
+                htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow"; style = "padding-left: 77px;" } { "Current Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Result" }
+            }
+        }
+        htmlElement 'tbody' @{} {
+            $hostname = $(hostname)
+            $testWSMan = Test-WSMan -computername $hostname -ErrorVariable "wmitest" -Authentication Negotiate
+            ConfigurationCheck "wmid" $($testWSMan.wsmid) "info" ""
+            ConfigurationCheck "ProtocolVersion" $($testWSMan.ProtocolVersion) "info" ""
+            ConfigurationCheck "ProductVendor" $($testWSMan.ProductVendor) "info" ""
+            ConfigurationCheck "ProductVersion" $($testWSMan.ProductVersion) "info" ""
+        }
+    }
+
+    #Service Check
+    htmlElement 'table' @{} {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Service Check" }
+                htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow"; style = "padding-left: 48px;" } { "Current Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Result" }
+            }
+        }
+        htmlElement 'tbody' @{} {
+            $winRMService = Get-Service -Name "WinRM"
+            $winRMStatus = $winRMService | Select-Object Status
+            $winRMStartType = $winRMService | Select-Object StartType
+            $WinRM_LogOnAs = Get-WmiObject -Class Win32_Service -Filter "Name='WinRM'" | Select-Object -ExpandProperty StartName
+            ConfigurationCheck "Status" $winRMStatus.Status "eq" "Running"
+            ConfigurationCheck "StartType" $winRMStartType.StartType "eq" "Automatic"
+            ConfigurationCheck "Log On As" $WinRM_LogOnAs "eq" "LocalSystem"
+        }
+    }
+
+    #Configuration Check
+    htmlElement 'table' @{} {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
+                htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Result" }
+            }
+        }         
+        htmlElement 'tbody' @{} {
+            $info = Get-Item -Path WSMan:\localhost\MaxEnvelopeSizeKb
+            ConfigurationCheck "MaxEnvelopeSize" $info.Value "eq" "8192"
+            $info = Get-Item WSMan:\localhost\Client\TrustedHosts
+            ConfigurationCheck "WSManConfig" $info.Name "eq" "TrustedHosts"
+        }
+    }
+}
+
+function Show-Section_NetworkConfiguration {
+    htmlElement 'h2' @{} { "Network Configuration" }
+    htmlElement 'h3' @{} { "Network Profile Configuration" }
+    htmlElement 'table' @{} {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
+                htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Result" }
+            }
+        }
+        htmlElement 'tbody' @{} {
+            $info = Get-NetConnectionProfile
+            ConfigurationCheck "NetworkCategory" $info.NetworkCategory "info" ""
+            ConfigurationCheck "IPv4Connectivity" $info.IPv4Connectivity "info" ""
+            ConfigurationCheck "IPv6Connectivity" $info.IPv6Connectivity "info" ""
+        }
+    }
+    Write-Host "Fetching Proxy Configuration"
+    htmlElement 'h3' @{} { "Proxy Configuration" }
+    htmlElement 'table' @{} {
+        htmlElement 'tbody' @{} {
+            htmlElement 'td' @{} { $(netsh winhttp show Proxy) }
+        }
+    }
+}
+
+function Show-Section_PSSessionConfiguration {
+    htmlElement 'h2' @{} { "PSSessionConfiguration" }
+    htmlElement 'table' @{} {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
+                htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Result" }
+            }
+        }
+        htmlElement 'tbody' @{} {
+            $lcmConfigs = Get-PSSessionConfiguration
+            for ($i = 0; $i -lt $lcmConfigs.Count; $i++) {
+                if ($lcmConfigs[$i].Name -match "nfAdminJeaClientManagement") {
+                    ConfigurationCheck "Name" $lcmConfigs[$i].Name "match" "nfAdminJeaClientManagement"
+                }
+                else {
+                    ConfigurationCheck "Name" $lcmConfigs[$i].Name "info" ""
+                }
+                ConfigurationCheck "PSVersion" $lcmConfigs[$i].PSVersion "info" ""
+                ConfigurationCheck "Permission" $lcmConfigs[$i].Permission "info" ""
+            }
+        }
+    }
+}
+
+function Show-Section_LogsPowershell {
+    htmlElement 'h2' @{} { "System Logs* (Last 30 Days)" }
+    htmlElement 'h3' @{} { "Event Logs - PowerShell: $(Get-LogCountByName "Windows PowerShell")" }
+    htmlElement 'label' @{for = "toggle" } { "Event Logs - PowerShell" }
+    htmlElement 'input' @{type = "checkbox"; id = "togglePowerShell" } {}
+    htmlElement 'table' @{id = "EventLogs_PowerShell" } {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Date" }
+                htmlElement 'th' @{class = "informationRow" } { "Id" }
+                htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
+                htmlElement 'th' @{class = "informationRow" } { "Message" }
+            }
+        }
+        htmlElement 'tbody' @{} {
+            Get-LogsByLogName "Windows PowerShell"
+        }
+    }
+}
+
+function Show-Section_LogsMicrosoftDefender{
+    htmlElement 'h3' @{} { "Event Logs - Windows Defender: $(Get-LogCountByName "Microsoft-Windows-Windows Defender/Operational")" }
+    htmlElement 'label' @{for = "toggle" } { "Event Logs - Windows Defender" }
+    htmlElement 'input' @{type = "checkbox"; id = "toggleWindowsDefender" } {}
+    htmlElement 'table' @{id = "EventLogs_WindowsDefender" } {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Date" }
+                htmlElement 'th' @{class = "informationRow" } { "Id" }
+                htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
+                htmlElement 'th' @{class = "informationRow" } { "Message" }
+            }
+        }
+        htmlElement 'tbody' @{} {
+            Get-LogsByLogName "Microsoft-Windows-Windows Defender/Operational"
+        }
+    }
+}
+
+function Show-Section_LogsWindowsRemoteManagement{
+    htmlElement 'h3' @{} { "Event Logs - Windows Remote Management: $(Get-LogCountByName "Microsoft-Windows-WinRM/Operational")" }
+    htmlElement 'label' @{for = "toggle" } { "Event Logs - Windows Remote Management" }
+    htmlElement 'input' @{type = "checkbox"; id = "toggleWinRM" } {}
+    htmlElement 'table' @{id = "EventLogs_WinRM" } {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Date" }
+                htmlElement 'th' @{class = "informationRow" } { "Id" }
+                htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
+                htmlElement 'th' @{class = "informationRow" } { "Message" }
+            }
+        }
+        htmlElement 'tbody' @{} {
+            Get-LogsByLogName "Microsoft-Windows-WinRM/Operational"
+        }
+    }
+}
+
+function Show-Section_LogsDSC{
+    htmlElement 'h3' @{} { "Event Logs - DSC: $(Get-LogCountByName "Microsoft-Windows-Dsc/Operational")" }
+    htmlElement 'label' @{for = "toggle" } { "Event Logs - DSC" }
+    htmlElement 'input' @{type = "checkbox"; id = "toggleDSC" } {}
+    htmlElement 'table' @{id = "EventLogs_DSC" } {
+        htmlElement 'thead' @{} {
+            htmlElement 'tr' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Date" }
+                htmlElement 'th' @{class = "informationRow" } { "Id" }
+                htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
+                htmlElement 'th' @{class = "informationRow" } { "Message" }
+            }
+        }
+        htmlElement 'tbody' @{} {
+            Get-LogsByLogName "Microsoft-Windows-Dsc/Operational"
+        }
+    }
+}
+
+function Show-SectionExcludedEventIDs{
+    htmlElement 'p' @{} { "*Excluded the following EventIDs as they are not relevant:" }
+    htmlElement 'ul' @{} { 
+        htmlElement 'li' @{} { "300" }    
+        htmlElement 'li' @{} { "1002" }    
+        htmlElement 'li' @{} { "2001" }    
+        htmlElement 'li' @{} { "4252" }    
+    }
+}
+
+############################################ END ##############################################
+###################################### Section Functions ######################################
+###############################################################################################
+
+
+
+
+###############################################################################################
+###################################### HTML Functions #########################################
+########################################### BEGIN #############################################
 function htmlElement {
     param(
         [Parameter(Mandatory = $true, Position = 0)]
@@ -490,401 +904,67 @@ function Create-Table {
     }
 }
 
-
 function Create-HTMLBody {
     $body = htmlElement 'body'@{} {
         #System information
-        htmlElement 'h1' @{} { "SystemValidator $($version)" }
-        htmlElement 'h2' @{} { "System information" }
-        $v = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
-        $infos = Get-CimInstance Win32_OperatingSystem
-        $uptime = (get-date) - (gcim Win32_OperatingSystem).LastBootUpTime
-        $licenseStatus = (Get-CimInstance SoftwareLicensingProduct -Filter "Name like 'Windows%'" | where { $_.PartialProductKey } | select Description, LicenseStatus -ExpandProperty LicenseStatus)
-        switch ($licenseStatus) {
-            "0" { $lcStatus = "Unlicensed" }
-            "1" { $lcStatus = "Licensed" }
-            "2" { $lcStatus = "OOBGrace" }
-            "3" { $lcStatus = "OOTGrace" }
-            "4" { $lcStatus = "NonGenuineGrace" }
-            "5" { $lcStatus = "Notification" }
-            "6" { $lcStatus = "ExtendedGrace" }
-        }
-        $role = Switch ((Get-CimInstance -Class Win32_ComputerSystem).DomainRole) {
-            "0"	{ "Standalone Workstation" }
-            "1"	{ "Member Workstation" }
-            "2"	{ "Standalone Server" }
-            "3"	{ "Member Server" }
-            "4"	{ "Backup Domain Controller" }
-            "5"	{ "Primary Domain Controller" }
-        }
-        Write-Host "Fetching system information"
-        $disk = Get-CimInstance Win32_LogicalDisk | Where-Object -Property DeviceID -eq "C:"
-        htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                }
-            }
-            htmlElement 'tbody' @{} {
-                ConfigurationCheck "Hostname" $(hostname) "" ""
-                ConfigurationCheck "Date" $(Get-Date) "" ""
-                ConfigurationCheck "System Uptime" $('{0:d1}:{1:d2}:{2:d2}:{3:d2}' -f $uptime.Days, $uptime.Hours, $uptime.Minutes, $uptime.Seconds) "" ""
-                ConfigurationCheck "Operating System" $($infos.Caption) "" ""
-                ConfigurationCheck "System Type" $((Get-WmiObject win32_operatingsystem | select osarchitecture).osarchitecture) "" ""
-                ConfigurationCheck "Build Number" ('Version {0} (Build {1}.{2})' -f $v.DisplayVersion, $v.CurrentBuildNumber, $v.UBR) "" ""
-                ConfigurationCheck "Installation Language" $((Get-UICulture).DisplayName) "" ""
-                ConfigurationCheck "Domain role" $($role) "" ""
-                ConfigurationCheck "Free disk space" $("{0:N1} GB" -f ($disk.FreeSpace / 1GB)) "" ""
-                ConfigurationCheck "License Status" $($lcStatus) "" ""
-            }
-        }
+        Write-Host "Fetching System information"
+        Show-Section_SystemInformation
+
         #PSVersionTable
         Write-Host "Fetching PowerShell information"
-        htmlElement 'h2' @{} { "PowerShell" }
-        htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Result" }
-                }
-            }
-            htmlElement 'tbody' @{} {
-                $psVTable = $psversiontable
-                $policies = (Get-ExecutionPolicy -List)
-                ConfigurationCheck "PSVersion" $psVTable.PSVersion "ge" "5.1"
-                ConfigurationCheck "PSEdition" $psVTable.PSEdition "info" ""
-                ConfigurationCheck "BuildVersion" $psVTable.BuildVersion "info" ""
-                ConfigurationCheck "CLRVersion" $psVTable.CLRVersion "info" ""
-                ConfigurationCheck "WSManStackVersion" $psVTable.WSManStackVersion "info" ""
-                ConfigurationCheck "PSRemotingProtocolVersion" $psVTable.PSRemotingProtocolVersion "info" ""
-                ConfigurationCheck "SerializationVersion" $psVTable.SerializationVersion "info" ""
-                ConfigurationCheck "(Effective ExecutionPolicy) ExecutionPolicy" $(Get-ExecutionPolicy) "eq" "RemoteSigned"
-                ConfigurationCheck "(ExecutionPolicy) MachinePolicy" $($policies[0].ExecutionPolicy) "info" ""
-                ConfigurationCheck "(ExecutionPolicy) UserPolicy" $($policies[1].ExecutionPolicy) "info" ""
-                ConfigurationCheck "(ExecutionPolicy) Process" $($policies[2].ExecutionPolicy) "info" ""
-                ConfigurationCheck "(ExecutionPolicy) CurrentUser" $($policies[3].ExecutionPolicy) "info" ""
-                ConfigurationCheck "(ExecutionPolicy) LocalMachine" $($policies[4].ExecutionPolicy) "info" ""
-            }
-        }
+        Show-Section_PowerShellInformation
 
         #DSCLocalConfigurationManager
         Write-Host "Fetching DSC LCM information"
-        htmlElement 'h2' @{} { "DSCLocalConfigurationManager" }
-        htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Result" }
-                }
-            }
-            htmlElement 'tbody' @{} {
-                $lcmConfigs = Get-DscLocalConfigurationManager
-                ConfigurationCheck "RefreshMode" $lcmConfigs.RefreshMode "eq" "Push"
-                ConfigurationCheck "ActionAfterReboot" $lcmConfigs.ActionAfterReboot "info" ""
-                ConfigurationCheck "ConfigurationMode" $lcmConfigs.ConfigurationMode "info" ""
-                ConfigurationCheck "LCMState" $lcmConfigs.LCMState "info" ""
-                ConfigurationCheck "ConfigurationModeFrequencyMins" $lcmConfigs.ConfigurationModeFrequencyMins "info" ""
-                ConfigurationCheck "StatusRetentionTimeInDays" $lcmConfigs.StatusRetentionTimeInDays "info" ""
-                ConfigurationCheck "RebootNodeIfNeeded" $lcmConfigs.RebootNodeIfNeeded "info" ""
-                ConfigurationCheck "RefreshFrequencyMins" $lcmConfigs.RefreshFrequencyMins "info" ""
-                ConfigurationCheck "AllowModuleOverWrite" $lcmConfigs.AllowModuleOverWrite "info" ""
-            }
-        }
+        Show-Section_DSC_LCM_Configuration
 
         Write-Host "Fetching DSC Configuration Status information"
-        htmlElement 'h3' @{} { "DSC Status" }
-        htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Result" }
-                }
-            }
-            $ConfigurationStatusSize = ((Get-ChildItem  -Path "C:\Windows\System32\Configuration\ConfigurationStatus" | measure Length -s).sum / 1Mb).ToString(".##")
-            #Skip if DSC-ConfigurationManager Refresh Mode is "Disabled"
-            $dscStatus = $null
-            $lcmConfigs = Get-DscLocalConfigurationManager
-            if($lcmConfigs.RefreshMode -ne "Disabled"){
-                while($lcmConfigs.LCMStateDetail -ne ""){
-                    Start-Sleep -Seconds 20
-                    Write-Host "LCM is in status '$($lcmConfigs.LCMStateDetail)', waiting..."
-                    $lcmConfigs = Get-DscLocalConfigurationManager
-                }
-                Test-DscConfiguration
-                $dscStatus = Get-DscConfigurationStatus
-            }
-            htmlElement 'tbody' @{} {
-                ConfigurationCheck "ConfigurationStatus-Folder Size (MB)" $ConfigurationStatusSize "info" ""
-                if ($null -eq $dscStatus) {
-                    ConfigurationCheck "DSC Status" "null" "eq" "null"
-                }
-                else {
-                    ConfigurationCheck "DSC Status" "DSC configuration already exists" "eq" "null"
-                }
-            }
-        }
-
+        Show-Section_DSCConfigurationStatus
         
+        #User Right Assignements
         Write-Host "Fetching User Right Assignements"
-        htmlElement 'h2' @{} { "User Right Assignements" }
-        htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Result" }
-                }
-            }
-
-            $securityPolicy = Get-AuditResource "WindowsSecurityPolicy"
-            $currentUserRightsSeNetworkLogonRight = $securityPolicy["Privilege Rights"]["SeNetworkLogonRight"]
-            htmlElement 'tbody' @{} {
-                foreach ($user in $currentUserRightsSeNetworkLogonRight) {
-                    ConfigurationCheck "SeNetworkLogonRight" $($user.Account) "info" ""
-                }
-            }
-        }
-
+        Show-Section_UserRightAssignements
 
         #WinRM
         Write-Host "Fetching WinRM Configuration"
-        htmlElement 'h2' @{} { "WinRM" }
-        #WSMan Check
-        htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow"; style = "padding-right: 161px;" } { "WSMan Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
-                    htmlElement 'th' @{class = "informationRow"; style = "padding-left: 77px;" } { "Current Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Result" }
-                }
-            }
-            htmlElement 'tbody' @{} {
-                $hostname = $(hostname)
-                $testWSMan = Test-WSMan -computername $hostname -ErrorVariable "wmitest" -Authentication Negotiate
-                ConfigurationCheck "wmid" $($testWSMan.wsmid) "info" ""
-                ConfigurationCheck "ProtocolVersion" $($testWSMan.ProtocolVersion) "info" ""
-                ConfigurationCheck "ProductVendor" $($testWSMan.ProductVendor) "info" ""
-                ConfigurationCheck "ProductVersion" $($testWSMan.ProductVersion) "info" ""
-            }
-        }
-
-        #Service Check
-        htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Service Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
-                    htmlElement 'th' @{class = "informationRow"; style = "padding-left: 48px;" } { "Current Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Result" }
-                }
-            }
-            htmlElement 'tbody' @{} {
-                $winRMService = Get-Service -Name "WinRM"
-                $winRMStatus = $winRMService | Select-Object Status
-                $winRMStartType = $winRMService | Select-Object StartType
-                $WinRM_LogOnAs = Get-WmiObject -Class Win32_Service -Filter "Name='WinRM'" | Select-Object -ExpandProperty StartName
-                ConfigurationCheck "Status" $winRMStatus.Status "eq" "Running"
-                ConfigurationCheck "StartType" $winRMStartType.StartType "eq" "Automatic"
-                ConfigurationCheck "Log On As" $WinRM_LogOnAs "eq" "LocalSystem"
-            }
-        }
-
-        #Configuration Check
-        htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Result" }
-                }
-            }         
-            htmlElement 'tbody' @{} {
-                $info = Get-Item -Path WSMan:\localhost\MaxEnvelopeSizeKb
-                ConfigurationCheck "MaxEnvelopeSize" $info.Value "eq" "8192"
-                $info = Get-Item WSMan:\localhost\Client\TrustedHosts
-                ConfigurationCheck "WSManConfig" $info.Name "eq" "TrustedHosts"
-            }
-        }
+        Show-Section_WinRM_Configuration
 
         #Public network profiles
         Write-Host "Fetching Network Configuration"
-        htmlElement 'h2' @{} { "Network Configuration" }
-        htmlElement 'h3' @{} { "Network Profile Configuration" }
-        htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Result" }
-                }
-            }
-            htmlElement 'tbody' @{} {
-                $info = Get-NetConnectionProfile
-                ConfigurationCheck "NetworkCategory" $info.NetworkCategory "info" ""
-                ConfigurationCheck "IPv4Connectivity" $info.IPv4Connectivity "info" ""
-                ConfigurationCheck "IPv6Connectivity" $info.IPv6Connectivity "info" ""
-            }
-        }
-        Write-Host "Fetching Proxy Configuration"
-        htmlElement 'h3' @{} { "Proxy Configuration" }
-        htmlElement 'table' @{} {
-            htmlElement 'tbody' @{} {
-                htmlElement 'td' @{} { $(netsh winhttp show Proxy) }
-            }
-        }
-
+        Show-Section_NetworkConfiguration
 
         #PSSessionConfiguration
         Write-Host "Fetching PSSessionConfiguration"
-        htmlElement 'h2' @{} { "PSSessionConfiguration" }
-        htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Result" }
-                }
-            }
-            htmlElement 'tbody' @{} {
-                $lcmConfigs = Get-PSSessionConfiguration
-                for ($i = 0; $i -lt $lcmConfigs.Count; $i++) {
-                    if ($lcmConfigs[$i].Name -match "nfAdminJeaClientManagement") {
-                        ConfigurationCheck "Name" $lcmConfigs[$i].Name "match" "nfAdminJeaClientManagement"
-                    }
-                    else {
-                        ConfigurationCheck "Name" $lcmConfigs[$i].Name "info" ""
-                    }
-                    ConfigurationCheck "PSVersion" $lcmConfigs[$i].PSVersion "info" ""
-                    ConfigurationCheck "Permission" $lcmConfigs[$i].Permission "info" ""
-                }
-            }
-        }
-
+        Show-Section_PSSessionConfiguration
 
         #Windows Defender Configuration
         Write-Host "Fetching Microsoft Defender Configuration"
-        htmlElement 'h2' @{} { "Windows Defender Configuration" }
-        htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Result" }
-                }
-            }
-            $asrStatus = Get-ASRStatus
-            htmlElement 'tbody' @{} {
-                ConfigurationCheck "Windows Defender enabled" $((Get-MpComputerStatus).AntivirusEnabled) "eq" "True"
-                ConfigurationCheck "ASR Rules enabled" $($asrStatus) "info" ""
-                #if ASR rules are enabled
-                if ($asrStatus -eq "True") {
-                    #get list of active ASR rules
-                    foreach ($rule in Get-MPPreference | Select-Object -ExpandProperty AttackSurfaceReductionRules_Ids) {
-                        if ($rule -match "e6db77e5-3df2-4cf1-b95a-636979351e5b") { ConfigurationCheck "Active ASR Rule" $(Get-ASRRuleNameByID $rule) "eq" "False"; continue; }
-                        if ($rule -match "d1e49aac-8f56-4280-b9ba-993a6d77406c") { ConfigurationCheck "Active ASR Rule" $(Get-ASRRuleNameByID $rule) "eq" "False"; continue; }
-                        ConfigurationCheck "Active ASR Rule" $(Get-ASRRuleNameByID $rule) "info" ""
-                    }
-                }
-            }
-        }
+        Show-Section_WindowsDefenderConfiguration
 
         #System Logs
         Write-Host "Fetching Event Logs - PowerShell"
-        htmlElement 'h2' @{} { "System Logs* (Last 30 Days)" }
-        htmlElement 'h3' @{} { "Event Logs - PowerShell: $(Get-LogCountByName "Windows PowerShell")" }
-        htmlElement 'label' @{for = "toggle" } { "Event Logs - PowerShell" }
-        htmlElement 'input' @{type = "checkbox"; id = "togglePowerShell" } {}
-        htmlElement 'table' @{id = "EventLogs_PowerShell" } {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Date" }
-                    htmlElement 'th' @{class = "informationRow" } { "Id" }
-                    htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
-                    htmlElement 'th' @{class = "informationRow" } { "Message" }
-                }
-            }
-            htmlElement 'tbody' @{} {
-                Get-LogsByLogName "Windows PowerShell"
-            }
-        }
+        Show-Section_LogsPowershell
 
         Write-Host "Fetching Event Logs - Microsoft Defender"
-        htmlElement 'h3' @{} { "Event Logs - Windows Defender: $(Get-LogCountByName "Microsoft-Windows-Windows Defender/Operational")" }
-        htmlElement 'label' @{for = "toggle" } { "Event Logs - Windows Defender" }
-        htmlElement 'input' @{type = "checkbox"; id = "toggleWindowsDefender" } {}
-        htmlElement 'table' @{id = "EventLogs_WindowsDefender" } {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Date" }
-                    htmlElement 'th' @{class = "informationRow" } { "Id" }
-                    htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
-                    htmlElement 'th' @{class = "informationRow" } { "Message" }
-                }
-            }
-            htmlElement 'tbody' @{} {
-                Get-LogsByLogName "Microsoft-Windows-Windows Defender/Operational"
-            }
-        }
+        Show-Section_LogsMicrosoftDefender
         
         Write-Host "Fetching Event Logs - Windows Remote Management"
-        htmlElement 'h3' @{} { "Event Logs - Windows Remote Management: $(Get-LogCountByName "Microsoft-Windows-WinRM/Operational")" }
-        htmlElement 'label' @{for = "toggle" } { "Event Logs - Windows Remote Management" }
-        htmlElement 'input' @{type = "checkbox"; id = "toggleWinRM" } {}
-        htmlElement 'table' @{id = "EventLogs_WinRM" } {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Date" }
-                    htmlElement 'th' @{class = "informationRow" } { "Id" }
-                    htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
-                    htmlElement 'th' @{class = "informationRow" } { "Message" }
-                }
-            }
-            htmlElement 'tbody' @{} {
-                Get-LogsByLogName "Microsoft-Windows-WinRM/Operational"
-            }
-        }
+        Show-Section_LogsWindowsRemoteManagement
 
         Write-Host "Fetching Event Logs - DSC"
-        htmlElement 'h3' @{} { "Event Logs - DSC: $(Get-LogCountByName "Microsoft-Windows-Dsc/Operational")" }
-        htmlElement 'label' @{for = "toggle" } { "Event Logs - DSC" }
-        htmlElement 'input' @{type = "checkbox"; id = "toggleDSC" } {}
-        htmlElement 'table' @{id = "EventLogs_DSC" } {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Date" }
-                    htmlElement 'th' @{class = "informationRow" } { "Id" }
-                    htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
-                    htmlElement 'th' @{class = "informationRow" } { "Message" }
-                }
-            }
-            htmlElement 'tbody' @{} {
-                Get-LogsByLogName "Microsoft-Windows-Dsc/Operational"
-            }
-        }
-        htmlElement 'p' @{} { "*Excluded the following EventIDs as they are not relevant:" }
-        htmlElement 'ul' @{} { 
-            htmlElement 'li' @{} {"300"}    
-            htmlElement 'li' @{} {"1002"}    
-            htmlElement 'li' @{} {"2001"}    
-            htmlElement 'li' @{} {"4252"}    
-        }
+        Show-Section_LogsDSC
+
+        Show-SectionExcludedEventIDs
     }
 
     Write-Host "Done"
     return $body
 }
+
+############################################ END ##############################################
+###################################### HTML Functions #########################################
+###############################################################################################
+
 $Path = "C:\Temp\SystemValidatorOutput.html"
 if (!(isAdmin)) {
     [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
