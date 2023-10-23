@@ -447,12 +447,22 @@ function Show-Section_WindowsDefenderConfiguration {
         }
         $asrStatus = Get-ASRStatus
         htmlElement 'tbody' @{} {
-            ConfigurationCheck "Windows Defender enabled" $((Get-MpComputerStatus).AntivirusEnabled) "eq" "True"
+            $activeASRRules = Get-MPPreference | Select-Object -ExpandProperty AttackSurfaceReductionRules_Ids
+            $isWindowsDefenderEnabled = (Get-MpComputerStatus).AntivirusEnabled
+            ConfigurationCheck "Windows Defender enabled" $($isWindowsDefenderEnabled) "eq" "True"
+            if($isWindowsDefenderEnabled -eq $false){
+                html 'td' @{} {"Skipping ASR Rules. Reason: Windows Defender is not active."}
+                return
+            }
+            if($null -eq $activeASRRules){
+                ConfigurationCheck "ASR Rules enabled" "ASR rules not configured" "info" ""
+                return
+            }
             ConfigurationCheck "ASR Rules enabled" $($asrStatus) "info" ""
             #if ASR rules are enabled
             if ($asrStatus -eq "True") {
                 #get list of active ASR rules
-                foreach ($rule in Get-MPPreference | Select-Object -ExpandProperty AttackSurfaceReductionRules_Ids) {
+                foreach ($rule in $activeASRRules) {
                     if ($rule -match "e6db77e5-3df2-4cf1-b95a-636979351e5b") { ConfigurationCheck "Active ASR Rule" $(Get-ASRRuleNameByID $rule) "eq" "False"; continue; }
                     if ($rule -match "d1e49aac-8f56-4280-b9ba-993a6d77406c") { ConfigurationCheck "Active ASR Rule" $(Get-ASRRuleNameByID $rule) "eq" "False"; continue; }
                     ConfigurationCheck "Active ASR Rule" $(Get-ASRRuleNameByID $rule) "info" ""
