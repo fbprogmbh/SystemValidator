@@ -669,16 +669,20 @@ function Create-HTMLBody {
             htmlElement 'tbody' @{} {
                 $hostname = $(hostname)
                 $testWSMan = Test-WSMan -computername $hostname -ErrorVariable "wmitest" -Authentication Negotiate
+                $IPv4Filter = Get-ItemProperty -ErrorAction SilentlyContinue -Path "Registry::Software\Policies\Microsoft\Windows\WinRM\Service" -Name "IPv6Filter" | Select-Object -ExpandProperty "IPv4Filter"
+                $IPv6Filter = Get-ItemProperty -ErrorAction SilentlyContinue -Path "Registry::Software\Policies\Microsoft\Windows\WinRM\Service" -Name "IPv6Filter" | Select-Object -ExpandProperty "IPv6Filter"
                 ConfigurationCheck "wmid" $($testWSMan.wsmid) "info" ""
                 ConfigurationCheck "ProtocolVersion" $($testWSMan.ProtocolVersion) "info" ""
                 ConfigurationCheck "ProductVendor" $($testWSMan.ProductVendor) "info" ""
                 ConfigurationCheck "ProductVersion" $($testWSMan.ProductVersion) "info" ""
+                ConfigurationCheck "Allow remote server management through WinRM (IPv4)" $IPv4Filter "ne" $null
+                ConfigurationCheck "Allow remote server management through WinRM (IPv6)" $IPv6Filter "ne" $null
             }
         }
 
         #Service Check
         htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {
+            htmlElement 'thead' @{} {ConfigurationCheck
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow" } { "Service Check" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
