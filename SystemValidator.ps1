@@ -43,6 +43,29 @@ function Get-LogsByLogName {
     }
 }
 
+function Get-BatteryStatus{
+    [CmdletBinding()]
+    param (
+        [Parameter()]
+        [int]
+        $status
+    )
+    switch($status){
+        1 {return "The battery is discharging."}
+        2 {return "The system has access to AC so no battery is being discharged."}
+        3 {return "Fully Charged"}
+        4 {return "Low"}
+        5 {return "Critical"}
+        6 {return "Charging"}
+        7 {return "Charging and High"}
+        8 {return "Charging and Low"}
+        9 {return "Charging and Critical"}
+        10 {return "Undefined"}
+        11 {return "Partially Charged"}
+    }
+    return "Undefined"
+}
+
 function Get-LogCountByName {
     param (
         [string] $logName
@@ -536,6 +559,21 @@ function Create-HTMLBody {
                 ConfigurationCheck "Domain role" $($role) "" ""
                 ConfigurationCheck "Free disk space" $("{0:N1} GB" -f ($disk.FreeSpace / 1GB)) "" ""
                 ConfigurationCheck "License Status" $($lcStatus) "" ""
+            }
+        }
+
+        htmlElement 'h2' @{} { "Battery information" }
+        htmlElement 'table' @{} {
+            htmlElement 'thead' @{} {
+                htmlElement 'tr' @{} {
+                    htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
+                }
+            }
+            $battery = Get-WmiObject -Class Win32_Battery
+            $battery_status = Get-BatteryStatus ($battery).BatteryStatus
+            htmlElement 'tbody' @{} {
+                ConfigurationCheck "Battery Status" $battery_status "" ""
+                ConfigurationCheck "Estimated Charge Remaining (%)" $battery.EstimatedChargeRemaining "" ""
             }
         }
         #PSVersionTable
