@@ -697,17 +697,16 @@ function Create-HTMLBody {
                     ConfigurationCheck "DSC Status" "null" "eq" "null"
                 }
                 elseif ("EnforceLabsMain" -eq $dscStatus) {
-                    ConfigurationCheck "DSC Status" "System is already hardened by EA" "eq" "null"
+                    ConfigurationCheck "DSC Status" "System is already hardened by EA" "info" "null"
                 }
                 elseif ("EnforceJea" -eq $dscStatus) {
-                    ConfigurationCheck "DSC Status" "JEA is installed on the system" "eq" "null"
+                    ConfigurationCheck "DSC Status" "JEA is installed on the system" "info" "null"
                 }
                 else {
-                    ConfigurationCheck "DSC Status" "DSC configuration already exists" "eq" "null"
+                    ConfigurationCheck "DSC Status" "DSC configuration already exists" "info" "null"
                 }
             }
         }
-
         
         Write-Host "Fetching User Rights Assignments"
         htmlElement 'h2' @{} { "User Rights Assignments" }
