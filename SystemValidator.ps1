@@ -379,7 +379,7 @@ function ConfigurationCheck {
         [string] $check,
         [string] $currentConfig,
         [string] $logicCheck,
-        [string] $targetConfig
+        [string[]] $targetConfig
     )
 
     switch -regex($logicCheck) {
@@ -415,8 +415,8 @@ function ConfigurationCheck {
                 $result = "Non-compliant"
             }
         }
-        'rematch' {
-           if ($targetConfig -match $currentConfig) {
+        'in' {
+           if ($currentConfig -in $targetConfig) {
                 $result = "Compliant"
             }
             else {
@@ -640,7 +640,7 @@ function Create-HTMLBody {
                 ConfigurationCheck "WSManStackVersion" $psVTable.WSManStackVersion "info" ""
                 ConfigurationCheck "PSRemotingProtocolVersion" $psVTable.PSRemotingProtocolVersion "info" ""
                 ConfigurationCheck "SerializationVersion" $psVTable.SerializationVersion "info" ""
-                ConfigurationCheck "(Effective ExecutionPolicy) ExecutionPolicy" $(Get-ExecutionPolicy) "rematch" "RemoteSigned Undefined Unrestricted Bypass"
+                ConfigurationCheck "(Effective ExecutionPolicy) ExecutionPolicy" "$(Get-ExecutionPolicy)" "in" @("RemoteSigned", "Undefined", "Unrestricted", "Bypass")
                 ConfigurationCheck "(ExecutionPolicy) MachinePolicy" $($policies[0].ExecutionPolicy) "info" ""
                 ConfigurationCheck "(ExecutionPolicy) UserPolicy" $($policies[1].ExecutionPolicy) "info" ""
                 ConfigurationCheck "(ExecutionPolicy) Process" $($policies[2].ExecutionPolicy) "info" ""
