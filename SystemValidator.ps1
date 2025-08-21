@@ -489,6 +489,12 @@ function Create-HTMLHead {
                 visibility: hidden;
                 opacity: 0;  
             }
+            input[type=checkbox]+label::before {
+                content: '+';
+            }
+            input[type=checkbox]:checked+label::before {
+                content: '-';
+            }
             input[type=checkbox]+label{
                 display: inline-block;
                 text-align: center;
@@ -500,7 +506,7 @@ function Create-HTMLHead {
                 border-radius: 8px;
                 font-weight: bold;
                 cursor: pointer;
-            }
+            }              
             input[type=checkbox]:checked+label+#EventLogs_DSC{
                 display: block;
                 text-align: center;
@@ -985,7 +991,7 @@ function Create-HTMLBody {
         htmlElement 'h3' @{} {
             htmlElement 'span' @{} { "Event Logs - PowerShell: $(Get-LogCountByName "Windows PowerShell") " }  
             htmlElement 'input' @{type = "checkbox"; id = "togglePowerShell"; name = "togglePowerShell"; class = "Hidden" } {}
-            htmlElement 'label' @{for = "togglePowerShell" } { "-" }
+            htmlElement 'label' @{for = "togglePowerShell" } { "" }
             htmlElement 'table' @{id = "EventLogs_PowerShell" } {
                 htmlElement 'thead' @{} {
                     htmlElement 'tr' @{} {
@@ -1006,7 +1012,7 @@ function Create-HTMLBody {
         htmlElement 'h3' @{} {
             htmlElement 'span' @{} { "Event Logs - Windows Defender: $(Get-LogCountByName "Microsoft-Windows-Windows Defender/Operational") " }  
             htmlElement 'input' @{type = "checkbox"; id = "toggleWindowsDefender"; name = "toggleWindowsDefender"; class = "Hidden" } {}
-            htmlElement 'label' @{for = "toggleWindowsDefender" } { "-" }
+            htmlElement 'label' @{for = "toggleWindowsDefender" } { "" }
             htmlElement 'table' @{id = "EventLogs_WindowsDefender" } {
                 htmlElement 'thead' @{} {
                     htmlElement 'tr' @{} {
@@ -1027,7 +1033,7 @@ function Create-HTMLBody {
         htmlElement 'h3' @{} {
             htmlElement 'span' @{} { "Event Logs - Windows Remote Management: $(Get-LogCountByName "Microsoft-Windows-WinRM/Operational") " } 
             htmlElement 'input' @{type = "checkbox"; id = "toggleWinRM"; name = "toggleWinRM"; class = "Hidden" } {}
-            htmlElement 'label' @{for = "toggleWinRM" } { "-" }
+            htmlElement 'label' @{for = "toggleWinRM" } { "" }
             htmlElement 'table' @{id = "EventLogs_WinRM" } {
                 htmlElement 'thead' @{} {
                     htmlElement 'tr' @{} {
@@ -1048,7 +1054,7 @@ function Create-HTMLBody {
         htmlElement 'h3' @{} {  
             htmlElement 'span' @{} { "Event Logs - DSC: $(Get-LogCountByName "Microsoft-Windows-Dsc/Operational") " }
             htmlElement 'input' @{type = "checkbox"; id = "toggleDSC"; name = "toggleDSC"; class = "Hidden" } {}
-            htmlElement 'label' @{for = "toggleDSC" } { "-" }
+            htmlElement 'label' @{for = "toggleDSC" } { "" }
             htmlElement 'table' @{id = "EventLogs_DSC" } {
                 htmlElement 'thead' @{} {
                     htmlElement 'tr' @{} {
