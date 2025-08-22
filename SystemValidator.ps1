@@ -15,7 +15,7 @@ function isAdmin {
 }
 
 
-function Get-Event{
+function Get-Event {
     param(
         [System.Diagnostics.Eventing.Reader.EventLogRecord] $event
     )
@@ -23,13 +23,13 @@ function Get-Event{
         htmlElement 'td' @{} { $event.TimeCreated }
         htmlElement 'td' @{} { $event.Id }
         htmlElement 'td' @{} { $event.LevelDisplayName }
-        if($event.LevelDisplayName -eq "Warning"){
+        if ($event.LevelDisplayName -eq "Warning") {
             htmlElement 'td' @{style = "background-color: yellow;" } { $event.Message }
         }
-        if($event.LevelDisplayName -eq "Error"){
+        if ($event.LevelDisplayName -eq "Error") {
             htmlElement 'td' @{style = "background-color: orange;" } { $event.Message }
         }
-        if($event.LevelDisplayName -eq "Critical"){
+        if ($event.LevelDisplayName -eq "Critical") {
             htmlElement 'td' @{style = "background-color: red;" } { $event.Message }
         }
     }
@@ -48,16 +48,16 @@ function Get-LogsByLogName {
     #Filtering out EventIDs by EventLog source instead of global filtering
     $eventPS
     switch ($logName) {
-        "Microsoft-Windows-Windows Defender/Operational" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object {$_.Id -ne 2001 -and $_.Id -ne 1002}}
-        "Windows PowerShell" {$eventPS = Get-WinEvent -FilterHashtable $args | Where-Object {$_.Id -ne 300}}
-        "Microsoft-Windows-Dsc/Operational" {$eventPS = Get-WinEvent -FilterHashtable $args | Where-Object {$_.Id -ne 4252}}
-        Default {$eventPS = Get-WinEvent -FilterHashtable $args}
+        "Microsoft-Windows-Windows Defender/Operational" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object { $_.Id -ne 2001 -and $_.Id -ne 1002 } }
+        "Windows PowerShell" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object { $_.Id -ne 300 } }
+        "Microsoft-Windows-Dsc/Operational" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object { $_.Id -ne 4252 } }
+        Default { $eventPS = Get-WinEvent -FilterHashtable $args }
     }
 
     $warningEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Warning" }
     $errorEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Error" }
     $criticalEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Critical" }
-   if (($warningEvents.Length + $errorEvents.Length + $criticalEvents.Length) -eq 0 ) {
+    if (($warningEvents.Length + $errorEvents.Length + $criticalEvents.Length) -eq 0 ) {
         return;
     }
     foreach ($event in $warningEvents) {
@@ -71,25 +71,25 @@ function Get-LogsByLogName {
     }
 }
 
-function Get-BatteryStatus{
+function Get-BatteryStatus {
     [CmdletBinding()]
     param (
         [Parameter()]
         [int]
         $status
     )
-    switch($status){
-        1 {return "The battery is discharging."}
-        2 {return "The system has access to AC so no battery is being discharged."}
-        3 {return "Fully Charged"}
-        4 {return "Low"}
-        5 {return "Critical"}
-        6 {return "Charging"}
-        7 {return "Charging and High"}
-        8 {return "Charging and Low"}
-        9 {return "Charging and Critical"}
-        10 {return "Undefined"}
-        11 {return "Partially Charged"}
+    switch ($status) {
+        1 { return "The battery is discharging." }
+        2 { return "The system has access to AC so no battery is being discharged." }
+        3 { return "Fully Charged" }
+        4 { return "Low" }
+        5 { return "Critical" }
+        6 { return "Charging" }
+        7 { return "Charging and High" }
+        8 { return "Charging and Low" }
+        9 { return "Charging and Critical" }
+        10 { return "Undefined" }
+        11 { return "Partially Charged" }
     }
     return "Undefined"
 }
@@ -106,10 +106,10 @@ function Get-LogCountByName {
     #Filtering out EventIDs by EventLog source instead of global filtering
     $eventPS
     switch ($logName) {
-        "Microsoft-Windows-Windows Defender/Operational" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object {$_.Id -ne 2001 -and $_.Id -ne 1002}}
-        "Windows PowerShell" {$eventPS = Get-WinEvent -FilterHashtable $args | Where-Object {$_.Id -ne 300}}
-        "Microsoft-Windows-Dsc/Operational" {$eventPS = Get-WinEvent -FilterHashtable $args | Where-Object {$_.Id -ne 4252}}
-        Default {$eventPS = Get-WinEvent -FilterHashtable $args}
+        "Microsoft-Windows-Windows Defender/Operational" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object { $_.Id -ne 2001 -and $_.Id -ne 1002 } }
+        "Windows PowerShell" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object { $_.Id -ne 300 } }
+        "Microsoft-Windows-Dsc/Operational" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object { $_.Id -ne 4252 } }
+        Default { $eventPS = Get-WinEvent -FilterHashtable $args }
     }
     
     $warningEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Warning" }
@@ -124,9 +124,6 @@ function Get-LogCountByName {
     }
     foreach ($event in $criticalEvents) {
         $sum += 1
-    }
-    if (($warningEvents.Length + $errorEvents.Length + $criticalEvents.Length) -eq 0) {
-        return "No Logs found.";
     }
     return $sum
 }
@@ -487,13 +484,99 @@ function Create-HTMLHead {
             .Information{
                 background-color:lightgrey;
             }
+            .Hidden{
+                position: absolute;
+                visibility: hidden;
+                opacity: 0;  
+            }
+            input[type=checkbox]+label::before {
+                content: '+';
+            }
+            input[type=checkbox]:checked+label::before {
+                content: '-';
+            }
+            input[type=checkbox]+label{
+                display: inline-block;
+                text-align: center;
+                text-decoration: none;
+                margin: 0 0 0 15px;
+                padding: 0 8px;
+                color: #161616;
+                background-color: #dfdfdf;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+            }              
+            input[type=checkbox]:checked+label+#EventLogs_DSC{
+                display: block;
+                text-align: center;
+                text-decoration: none;
+                margin: 0 0 0 15px;
+                padding: 0 8px;
+                color: #161616;
+                background-color: #dfdfdf;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+            input[type=checkbox]:checked+label+#EventLogs_WinRM{
+                display: block;
+                text-align: center;
+                text-decoration: none;
+                margin: 0 0 0 15px;
+                padding: 0 8px;
+                color: #161616;
+                background-color: #dfdfdf;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+            input[type=checkbox]:checked+label+#EventLogs_WindowsDefender{
+                display: block;
+                text-align: center;
+                text-decoration: none;
+                margin: 0 0 0 15px;
+                padding: 0 8px;
+                color: #161616;
+                background-color: #dfdfdf;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+            input[type=checkbox]:checked+label+#EventLogs_PowerShell{
+                display: block;
+                text-align: center;
+                text-decoration: none;
+                margin: 0 0 0 15px;
+                padding: 0 8px;
+                color: #161616;
+                background-color: #dfdfdf;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+            }                     
             table{
                 margin-bottom:50px
             }
             h2{
                 margin-bottom: 5px
             }
-
+            h3 span{
+                padding: 5px 10px;
+                border-radius: 8px;
+                display: inline;
+                margin-block-start: 0.67em;
+                margin-block-end: 0.67em;
+                margin-inline-start: 0px;
+                margin-inline-end: 0px;
+                font-weight: bold;
+                unicode-bidi: isolate;
+                background-color: #cc0000;
+                color: #f0f0f0;
+            }
+            span{
+                background-color: #f0f0f0
+            }
             #EventLogs_PowerShell, #EventLogs_WindowsDefender, #EventLogs_WinRM, #EventLogs_DSC{
                 display: none;
             }
@@ -682,8 +765,8 @@ function Create-HTMLBody {
             #Skip if DSC-ConfigurationManager Refresh Mode is "Disabled"
             $dscStatus = $null
             $lcmConfigs = Get-DscLocalConfigurationManager
-            if($lcmConfigs.RefreshMode -ne "Disabled"){
-                while($lcmConfigs.LCMState -ne "Idle"){
+            if ($lcmConfigs.RefreshMode -ne "Disabled") {
+                while ($lcmConfigs.LCMState -ne "Idle") {
                     Start-Sleep -Seconds 5
                     Write-Host "LCM is in status '$($lcmConfigs.LCMStateDetail)', waiting..."
                     $lcmConfigs = Get-DscLocalConfigurationManager
@@ -756,7 +839,7 @@ function Create-HTMLBody {
 
         #Service Check
         htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {ConfigurationCheck
+            htmlElement 'thead' @{} { ConfigurationCheck
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow" } { "Service Check" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
@@ -905,82 +988,96 @@ function Create-HTMLBody {
         #System Logs
         Write-Host "Fetching Event Logs - PowerShell"
         htmlElement 'h2' @{} { "System Logs* (Last 30 Days)" }
-        htmlElement 'h3' @{} { "Event Logs - PowerShell: $(Get-LogCountByName "Windows PowerShell")" }
-        htmlElement 'label' @{for = "toggle" } { "Event Logs - PowerShell" }
-        htmlElement 'input' @{type = "checkbox"; id = "togglePowerShell" } {}
-        htmlElement 'table' @{id = "EventLogs_PowerShell" } {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Date" }
-                    htmlElement 'th' @{class = "informationRow" } { "Id" }
-                    htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
-                    htmlElement 'th' @{class = "informationRow" } { "Message" }
+        htmlElement 'h3' @{} {
+            htmlElement 'span' @{} { "Event Logs - PowerShell: $(Get-LogCountByName "Windows PowerShell") " }  
+            htmlElement 'input' @{type = "checkbox"; id = "togglePowerShell"; name = "togglePowerShell"; class = "Hidden" } {}
+            htmlElement 'label' @{for = "togglePowerShell" } { "" }
+            htmlElement 'table' @{id = "EventLogs_PowerShell" } {
+                htmlElement 'thead' @{} {
+                    htmlElement 'tr' @{} {
+                        htmlElement 'th' @{class = "informationRow" } { "Date" }
+                        htmlElement 'th' @{class = "informationRow" } { "Id" }
+                        htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
+                        htmlElement 'th' @{class = "informationRow" } { "Message" }
+                    }
                 }
-            }
-            htmlElement 'tbody' @{} {
-                Get-LogsByLogName "Windows PowerShell"
-            }
+                htmlElement 'tbody' @{} {
+                    Get-LogsByLogName "Windows PowerShell"
+                }
+            } 
         }
+        
 
         Write-Host "Fetching Event Logs - Microsoft Defender"
-        htmlElement 'h3' @{} { "Event Logs - Windows Defender: $(Get-LogCountByName "Microsoft-Windows-Windows Defender/Operational")" }
-        htmlElement 'label' @{for = "toggle" } { "Event Logs - Windows Defender" }
-        htmlElement 'input' @{type = "checkbox"; id = "toggleWindowsDefender" } {}
-        htmlElement 'table' @{id = "EventLogs_WindowsDefender" } {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Date" }
-                    htmlElement 'th' @{class = "informationRow" } { "Id" }
-                    htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
-                    htmlElement 'th' @{class = "informationRow" } { "Message" }
+        htmlElement 'h3' @{} {
+            htmlElement 'span' @{} { "Event Logs - Windows Defender: $(Get-LogCountByName "Microsoft-Windows-Windows Defender/Operational") " }  
+            htmlElement 'input' @{type = "checkbox"; id = "toggleWindowsDefender"; name = "toggleWindowsDefender"; class = "Hidden" } {}
+            htmlElement 'label' @{for = "toggleWindowsDefender" } { "" }
+            htmlElement 'table' @{id = "EventLogs_WindowsDefender" } {
+                htmlElement 'thead' @{} {
+                    htmlElement 'tr' @{} {
+                        htmlElement 'th' @{class = "informationRow" } { "Date" }
+                        htmlElement 'th' @{class = "informationRow" } { "Id" }
+                        htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
+                        htmlElement 'th' @{class = "informationRow" } { "Message" }
+                    }
                 }
-            }
-            htmlElement 'tbody' @{} {
-                Get-LogsByLogName "Microsoft-Windows-Windows Defender/Operational"
+                htmlElement 'tbody' @{} {
+                    Get-LogsByLogName "Microsoft-Windows-Windows Defender/Operational"
+                }
             }
         }
         
+        
         Write-Host "Fetching Event Logs - Windows Remote Management"
-        htmlElement 'h3' @{} { "Event Logs - Windows Remote Management: $(Get-LogCountByName "Microsoft-Windows-WinRM/Operational")" }
-        htmlElement 'label' @{for = "toggle" } { "Event Logs - Windows Remote Management" }
-        htmlElement 'input' @{type = "checkbox"; id = "toggleWinRM" } {}
-        htmlElement 'table' @{id = "EventLogs_WinRM" } {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Date" }
-                    htmlElement 'th' @{class = "informationRow" } { "Id" }
-                    htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
-                    htmlElement 'th' @{class = "informationRow" } { "Message" }
+        htmlElement 'h3' @{} {
+            htmlElement 'span' @{} { "Event Logs - Windows Remote Management: $(Get-LogCountByName "Microsoft-Windows-WinRM/Operational") " } 
+            htmlElement 'input' @{type = "checkbox"; id = "toggleWinRM"; name = "toggleWinRM"; class = "Hidden" } {}
+            htmlElement 'label' @{for = "toggleWinRM" } { "" }
+            htmlElement 'table' @{id = "EventLogs_WinRM" } {
+                htmlElement 'thead' @{} {
+                    htmlElement 'tr' @{} {
+                        htmlElement 'th' @{class = "informationRow" } { "Date" }
+                        htmlElement 'th' @{class = "informationRow" } { "Id" }
+                        htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
+                        htmlElement 'th' @{class = "informationRow" } { "Message" }
+                    }
+                }
+                htmlElement 'tbody' @{} {
+                    Get-LogsByLogName "Microsoft-Windows-WinRM/Operational"
                 }
             }
-            htmlElement 'tbody' @{} {
-                Get-LogsByLogName "Microsoft-Windows-WinRM/Operational"
-            }
         }
+        
 
         Write-Host "Fetching Event Logs - DSC"
-        htmlElement 'h3' @{} { "Event Logs - DSC: $(Get-LogCountByName "Microsoft-Windows-Dsc/Operational")" }
-        htmlElement 'label' @{for = "toggle" } { "Event Logs - DSC" }
-        htmlElement 'input' @{type = "checkbox"; id = "toggleDSC" } {}
-        htmlElement 'table' @{id = "EventLogs_DSC" } {
-            htmlElement 'thead' @{} {
-                htmlElement 'tr' @{} {
-                    htmlElement 'th' @{class = "informationRow" } { "Date" }
-                    htmlElement 'th' @{class = "informationRow" } { "Id" }
-                    htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
-                    htmlElement 'th' @{class = "informationRow" } { "Message" }
+        htmlElement 'h3' @{} {  
+            htmlElement 'span' @{} { "Event Logs - DSC: $(Get-LogCountByName "Microsoft-Windows-Dsc/Operational") " }
+            htmlElement 'input' @{type = "checkbox"; id = "toggleDSC"; name = "toggleDSC"; class = "Hidden" } {}
+            htmlElement 'label' @{for = "toggleDSC" } { "" }
+            htmlElement 'table' @{id = "EventLogs_DSC" } {
+                htmlElement 'thead' @{} {
+                    htmlElement 'tr' @{} {
+                        htmlElement 'th' @{class = "informationRow" } { "Date" }
+                        htmlElement 'th' @{class = "informationRow" } { "Id" }
+                        htmlElement 'th' @{class = "informationRow" } { "LevelDisplayName" }
+                        htmlElement 'th' @{class = "informationRow" } { "Message" }
+                    }
                 }
-            }
-            htmlElement 'tbody' @{} {
-                Get-LogsByLogName "Microsoft-Windows-Dsc/Operational"
-            }
+                htmlElement 'tbody' @{} {
+                    Get-LogsByLogName "Microsoft-Windows-Dsc/Operational"
+                }
+            }   
         }
+        
+        
+        
         htmlElement 'p' @{} { "*Excluded the following EventIDs as they are not relevant:" }
         htmlElement 'ul' @{} {    
-            htmlElement 'li' @{} {"DSC:             4252"}  
-            htmlElement 'li' @{} {"PowerShell:       300"}    
-            htmlElement 'li' @{} {"WindowsDefender: 1002"}    
-            htmlElement 'li' @{} {"WindowsDefender: 2001"}   
+            htmlElement 'li' @{} { "DSC:             4252" }  
+            htmlElement 'li' @{} { "PowerShell:       300" }    
+            htmlElement 'li' @{} { "WindowsDefender: 1002" }    
+            htmlElement 'li' @{} { "WindowsDefender: 2001" }   
         }
     }
 
@@ -995,8 +1092,7 @@ if (!(isAdmin)) {
 }
 else {
     Write-Host "Fetching information, please wait..."
-    if(-not [string]::IsNullOrWhiteSpace($OutputPath) -and (Test-Path -PathType Container $OutputPath))
-    {
+    if (-not [string]::IsNullOrWhiteSpace($OutputPath) -and (Test-Path -PathType Container $OutputPath)) {
         $Path = $OutputPath
     }
 
