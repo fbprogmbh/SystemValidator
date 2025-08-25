@@ -640,6 +640,50 @@ function Create-HTMLBody {
                 ConfigurationCheck "(ExecutionPolicy) LocalMachine" $($policies[4].ExecutionPolicy) "info" ""
             }
         }
+        #.NET Framework
+        Write-Host "Fetching .NET framework information"
+        htmlElement 'h2' @{} { ".NET framework" }
+        htmlElement 'table' @{} {
+            htmlElement 'thead' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
+                    htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
+                    htmlElement 'th' @{class = "informationRow" } { "Result" }
+            }
+            htmlElement 'tbody' @{} {
+                $SystemDefaultTlsVersions = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v2.0.50727" -ErrorAction SilentlyContinue).SystemDefaultTlsVersions
+                $SystemDefaultTlsVersions64 = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v2.0.50727" -ErrorAction SilentlyContinue).SystemDefaultTlsVersions
+                $SchUseStrongCrypto = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -ErrorAction SilentlyContinue).SchUseStrongCrypto
+                $SchUseStrongCrypto64 = (Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\.NETFramework\v4.0.30319" -ErrorAction SilentlyContinue).SchUseStrongCrypto
+                if ($null -eq $SystemDefaultTlsVersions) {
+                    ConfigurationCheck "SystemDefaultTlsVersions" "Registry key not existent" "info" "1"
+                }
+                else {
+                    ConfigurationCheck "SystemDefaultTlsVersions" $SystemDefaultTlsVersions "eq" "1"
+                }
+
+                if ($null -eq $SystemDefaultTlsVersions64) {
+                    ConfigurationCheck "SystemDefaultTlsVersions64" "Registry key not existent" "info" "1"
+                }
+                else {
+                    ConfigurationCheck "SystemDefaultTlsVersions64" $SystemDefaultTlsVersions64 "eq" "1"
+                }
+
+                if ($null -eq $SchUseStrongCrypto) {
+                    ConfigurationCheck "SchUseStrongCrypto" "Registry key not existent" "info" "1"
+                }
+                else {
+                    ConfigurationCheck "SchUseStrongCrypto" $SchUseStrongCrypto "eq" "1"
+                }
+
+                if ($null -eq $SchUseStrongCrypto64) {
+                    ConfigurationCheck "SchUseStrongCrypto64" "Registry key not existent" "info" "1"
+                }
+                else {
+                    ConfigurationCheck "SchUseStrongCrypto64" $SchUseStrongCrypto64 "eq" "1"
+                }
+            }
+        }
 
         #DSCLocalConfigurationManager
         Write-Host "Fetching DSC LCM information"
