@@ -827,6 +827,14 @@ function Create-HTMLBody {
                 }
             }
             htmlElement 'tbody' @{} {
+                $object = Get-WSManInstance -ResourceURI winrm/config/Listener -Enumerate
+                $IPv6 = $($object).ListeningOn | Where-Object { $_ -ne '::1' -and $_ -like '*:*' }
+                if ($IPv6) {
+                    ConfigurationCheck "IPv6 Filter" $object.Address "eq" "*"
+                }
+                else {
+                    ConfigurationCheck "IPv6 Filter" $object.Address "info" "IPv6 is disabled"
+                }
                 $hostname = $(hostname)
                 $testWSMan = Test-WSMan -computername $hostname -ErrorVariable "wmitest" -Authentication Negotiate
                 # Run the WinRM command for ipv4/ipv6 filter
