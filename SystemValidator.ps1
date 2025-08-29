@@ -723,6 +723,140 @@ function Create-HTMLBody {
                 ConfigurationCheck "(ExecutionPolicy) LocalMachine" $($policies[4].ExecutionPolicy) "info" ""
             }
         }
+        #.NET Framework
+        Write-Host "Fetching .NET framework information"
+        htmlElement 'h2' @{} { ".NET framework" }
+        htmlElement 'table' @{} {
+            htmlElement 'thead' @{} {
+                htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
+                htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Result" }
+            }
+            htmlElement 'tbody' @{} {
+                [string[]]$SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol
+                $SystemDefaultTlsVersions = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v2.0.50727" -ErrorAction SilentlyContinue).SystemDefaultTlsVersions
+                $SystemDefaultTlsVersions64 = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v2.0.50727" -ErrorAction SilentlyContinue).SystemDefaultTlsVersions
+                $SchUseStrongCrypto = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -ErrorAction SilentlyContinue).SchUseStrongCrypto
+                $SchUseStrongCrypto64 = (Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\.NETFramework\v4.0.30319" -ErrorAction SilentlyContinue).SchUseStrongCrypto
+                # Check which protocols are configures via registry
+                [string[]]$EnabledProtocols
+                if ($SecurityProtocol -eq "SystemDefault") {
+                    $Protocols = Get-ChildItem -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols" | Select-Object -ExpandProperty PSChildName
+                    if ($Protocols) {
+                        foreach ($Protocol in $Protocols) {
+                            $key = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\$($Protocol)\Client" -Name "Enabled" 
+                            if ($key.Enabled -eq 1) {
+                                $EnabledProtocols += "$Protocol   "    
+                            }
+                        }
+                        ConfigurationCheck "SecurityProtocol" $EnabledProtocols "match" "TLS 1.2" 
+                    }
+                    else {
+                        # SystemDefault 
+                        switch ($infos.Caption) {
+                            { $_ -match "Server 2003" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2003: SSL 2.0, SSL 3.0, TLS 1.0" "match" "TLS 1.2" 
+                            }
+                            { $_ -match "Server 2008" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2008: TLS 1.0" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Server 2012 R2" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2012 R2: TLS 1.0, TLS 1.1, TLS 1.2" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Server 2012" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2012: TLS 1.0, TLS 1.1" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Server 2016" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2016: TLS 1.0, TLS 1.1, TLS 1.2" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Server 2019" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2019: TLS 1.0, TLS 1.1, TLS 1.2" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Server 2022" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2022: TLS 1.2, TLS 1.3" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows XP" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows XP: SSL 2.0, SSL 3.0, TLS 1.0" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows Vista" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Vista: TLS 1.0" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows 7" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows 7: TLS 1.0" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows 8.1" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows 8.1: TLS 1.0, TLS 1.1, TLS 1.2" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows 8" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows 8: TLS 1.0, TLS 1.1" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows 10" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows 10: TLS 1.0, TLS 1.1, TLS 1.2" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows 11" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows 11: TLS 1.2 und TLS 1.3" "match" "TLS 1.2"
+                            }
+                            Default {
+                                ConfigurationCheck "SecurityProtocol" "No default configuration known for $($infos.Caption)" "info" "TLS 1.2"
+                            }
+                        }
+                        ConfigurationCheck "SecurityProtocol" "No protocols configured, Windows uses the default protocol according to the OS" "info" "TLS 1.2"
+                    }
+                }
+                else {
+                    for ($i = 0; $i -lt $SecurityProtocol.Count; $i++) {
+                        switch ($SecurityProtocol[$i]) {
+                            'Ssl3' {
+                                $SecurityProtocol[$i] = "SSL 3.0"
+                            }
+                            'Tls' {
+                                $SecurityProtocol[$i] = "TLS 1.0"
+                            }
+                            'Tls11' {
+                                $SecurityProtocol[$i] = "TLS 1.1"
+                            }
+                            'Tls12' {
+                                $SecurityProtocol[$i] = "TLS 1.2"
+                            }
+                            'Tls13' {
+                                $SecurityProtocol[$i] = "TLS 1.3"
+                            }
+                            Default {}
+                        }
+                    }
+                    ConfigurationCheck "SecurityProtocol" $SecurityProtocol "eq" "TLS 1.2"
+                }
+
+                if ($null -eq $SystemDefaultTlsVersions) {
+                    ConfigurationCheck "SystemDefaultTlsVersions" "Registry key not existent" "info" "1"
+                }
+                else {
+                    ConfigurationCheck "SystemDefaultTlsVersions" $SystemDefaultTlsVersions "eq" "1"
+                }
+
+                if ($null -eq $SystemDefaultTlsVersions64) {
+                    ConfigurationCheck "SystemDefaultTlsVersions64" "Registry key not existent" "info" "1"
+                }
+                else {
+                    ConfigurationCheck "SystemDefaultTlsVersions64" $SystemDefaultTlsVersions64 "eq" "1"
+                }
+
+                if ($null -eq $SchUseStrongCrypto) {
+                    ConfigurationCheck "SchUseStrongCrypto" "Registry key not existent" "info" "1"
+                }
+                else {
+                    ConfigurationCheck "SchUseStrongCrypto" $SchUseStrongCrypto "eq" "1"
+                }
+
+                if ($null -eq $SchUseStrongCrypto64) {
+                    ConfigurationCheck "SchUseStrongCrypto64" "Registry key not existent" "info" "1"
+                }
+                else {
+                    ConfigurationCheck "SchUseStrongCrypto64" $SchUseStrongCrypto64 "eq" "1"
+                }
+            }
+        }
 
         #DSCLocalConfigurationManager
         Write-Host "Fetching DSC LCM information"
