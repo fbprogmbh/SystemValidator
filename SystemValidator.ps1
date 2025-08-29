@@ -15,7 +15,7 @@ function isAdmin {
 }
 
 
-function Get-Event{
+function Get-Event {
     param(
         [System.Diagnostics.Eventing.Reader.EventLogRecord] $event
     )
@@ -23,13 +23,13 @@ function Get-Event{
         htmlElement 'td' @{} { $event.TimeCreated }
         htmlElement 'td' @{} { $event.Id }
         htmlElement 'td' @{} { $event.LevelDisplayName }
-        if($event.LevelDisplayName -eq "Warning"){
+        if ($event.LevelDisplayName -eq "Warning") {
             htmlElement 'td' @{style = "background-color: yellow;" } { $event.Message }
         }
-        if($event.LevelDisplayName -eq "Error"){
+        if ($event.LevelDisplayName -eq "Error") {
             htmlElement 'td' @{style = "background-color: orange;" } { $event.Message }
         }
-        if($event.LevelDisplayName -eq "Critical"){
+        if ($event.LevelDisplayName -eq "Critical") {
             htmlElement 'td' @{style = "background-color: red;" } { $event.Message }
         }
     }
@@ -48,16 +48,16 @@ function Get-LogsByLogName {
     #Filtering out EventIDs by EventLog source instead of global filtering
     $eventPS
     switch ($logName) {
-        "Microsoft-Windows-Windows Defender/Operational" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object {$_.Id -ne 2001 -and $_.Id -ne 1002}}
-        "Windows PowerShell" {$eventPS = Get-WinEvent -FilterHashtable $args | Where-Object {$_.Id -ne 300}}
-        "Microsoft-Windows-Dsc/Operational" {$eventPS = Get-WinEvent -FilterHashtable $args | Where-Object {$_.Id -ne 4252}}
-        Default {$eventPS = Get-WinEvent -FilterHashtable $args}
+        "Microsoft-Windows-Windows Defender/Operational" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object { $_.Id -ne 2001 -and $_.Id -ne 1002 } }
+        "Windows PowerShell" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object { $_.Id -ne 300 } }
+        "Microsoft-Windows-Dsc/Operational" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object { $_.Id -ne 4252 } }
+        Default { $eventPS = Get-WinEvent -FilterHashtable $args }
     }
 
     $warningEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Warning" }
     $errorEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Error" }
     $criticalEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Critical" }
-   if (($warningEvents.Length + $errorEvents.Length + $criticalEvents.Length) -eq 0 ) {
+    if (($warningEvents.Length + $errorEvents.Length + $criticalEvents.Length) -eq 0 ) {
         return;
     }
     foreach ($event in $warningEvents) {
@@ -71,25 +71,25 @@ function Get-LogsByLogName {
     }
 }
 
-function Get-BatteryStatus{
+function Get-BatteryStatus {
     [CmdletBinding()]
     param (
         [Parameter()]
         [int]
         $status
     )
-    switch($status){
-        1 {return "The battery is discharging."}
-        2 {return "The system has access to AC so no battery is being discharged."}
-        3 {return "Fully Charged"}
-        4 {return "Low"}
-        5 {return "Critical"}
-        6 {return "Charging"}
-        7 {return "Charging and High"}
-        8 {return "Charging and Low"}
-        9 {return "Charging and Critical"}
-        10 {return "Undefined"}
-        11 {return "Partially Charged"}
+    switch ($status) {
+        1 { return "The battery is discharging." }
+        2 { return "The system has access to AC so no battery is being discharged." }
+        3 { return "Fully Charged" }
+        4 { return "Low" }
+        5 { return "Critical" }
+        6 { return "Charging" }
+        7 { return "Charging and High" }
+        8 { return "Charging and Low" }
+        9 { return "Charging and Critical" }
+        10 { return "Undefined" }
+        11 { return "Partially Charged" }
     }
     return "Undefined"
 }
@@ -106,10 +106,10 @@ function Get-LogCountByName {
     #Filtering out EventIDs by EventLog source instead of global filtering
     $eventPS
     switch ($logName) {
-        "Microsoft-Windows-Windows Defender/Operational" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object {$_.Id -ne 2001 -and $_.Id -ne 1002}}
-        "Windows PowerShell" {$eventPS = Get-WinEvent -FilterHashtable $args | Where-Object {$_.Id -ne 300}}
-        "Microsoft-Windows-Dsc/Operational" {$eventPS = Get-WinEvent -FilterHashtable $args | Where-Object {$_.Id -ne 4252}}
-        Default {$eventPS = Get-WinEvent -FilterHashtable $args}
+        "Microsoft-Windows-Windows Defender/Operational" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object { $_.Id -ne 2001 -and $_.Id -ne 1002 } }
+        "Windows PowerShell" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object { $_.Id -ne 300 } }
+        "Microsoft-Windows-Dsc/Operational" { $eventPS = Get-WinEvent -FilterHashtable $args | Where-Object { $_.Id -ne 4252 } }
+        Default { $eventPS = Get-WinEvent -FilterHashtable $args }
     }
     
     $warningEvents = $eventPS | Where-Object { $_.LevelDisplayName -eq "Warning" }
@@ -646,15 +646,105 @@ function Create-HTMLBody {
         htmlElement 'table' @{} {
             htmlElement 'thead' @{} {
                 htmlElement 'th' @{class = "informationRow" } { "Configuration Check" }
-                    htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
-                    htmlElement 'th' @{class = "informationRow" } { "Result" }
+                htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Current Configuration" }
+                htmlElement 'th' @{class = "informationRow" } { "Result" }
             }
             htmlElement 'tbody' @{} {
+                [string[]]$SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol
                 $SystemDefaultTlsVersions = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v2.0.50727" -ErrorAction SilentlyContinue).SystemDefaultTlsVersions
                 $SystemDefaultTlsVersions64 = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v2.0.50727" -ErrorAction SilentlyContinue).SystemDefaultTlsVersions
                 $SchUseStrongCrypto = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -ErrorAction SilentlyContinue).SchUseStrongCrypto
                 $SchUseStrongCrypto64 = (Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\.NETFramework\v4.0.30319" -ErrorAction SilentlyContinue).SchUseStrongCrypto
+                # Check which protocols are configures via registry
+                [string[]]$EnabledProtocols
+                if ($SecurityProtocol -eq "SystemDefault") {
+                    $Protocols = Get-ChildItem -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols" | Select-Object -ExpandProperty PSChildName
+                    if ($Protocols) {
+                        foreach ($Protocol in $Protocols) {
+                            $key = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\$($Protocol)\Client" -Name "Enabled" 
+                            if ($key.Enabled -eq 1) {
+                                $EnabledProtocols += "$Protocol   "    
+                            }
+                        }
+                        ConfigurationCheck "SecurityProtocol" $EnabledProtocols "match" "TLS 1.2" 
+                    }
+                    else {
+                        # SystemDefault 
+                        switch ($infos.Caption) {
+                            { $_ -match "Server 2003" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2003: SSL 2.0, SSL 3.0, TLS 1.0" "match" "TLS 1.2" 
+                            }
+                            { $_ -match "Server 2008" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2008: TLS 1.0" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Server 2012 R2" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2012 R2: TLS 1.0, TLS 1.1, TLS 1.2" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Server 2012" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2012: TLS 1.0, TLS 1.1" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Server 2016" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2016: TLS 1.0, TLS 1.1, TLS 1.2" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Server 2019" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2019: TLS 1.0, TLS 1.1, TLS 1.2" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Server 2022" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Server 2022: TLS 1.2, TLS 1.3" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows XP" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows XP: SSL 2.0, SSL 3.0, TLS 1.0" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows Vista" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows Vista: TLS 1.0" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows 7" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows 7: TLS 1.0" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows 8.1" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows 8.1: TLS 1.0, TLS 1.1, TLS 1.2" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows 8" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows 8: TLS 1.0, TLS 1.1" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows 10" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows 10: TLS 1.0, TLS 1.1, TLS 1.2" "match" "TLS 1.2"
+                            }
+                            { $_ -match "Windows 11" } {
+                                ConfigurationCheck "SecurityProtocol" "Defaults for Windows 11: TLS 1.2 und TLS 1.3" "match" "TLS 1.2"
+                            }
+                            Default {
+                                ConfigurationCheck "SecurityProtocol" "No default configuration known for $($infos.Caption)" "info" "TLS 1.2"
+                            }
+                        }
+                        ConfigurationCheck "SecurityProtocol" "No protocols configured, Windows uses the default protocol according to the OS" "info" "TLS 1.2"
+                    }
+                }
+                else {
+                    for ($i = 0; $i -lt $SecurityProtocol.Count; $i++) {
+                        switch ($SecurityProtocol[$i]) {
+                            'Ssl3' {
+                                $SecurityProtocol[$i] = "SSL 3.0"
+                            }
+                            'Tls' {
+                                $SecurityProtocol[$i] = "TLS 1.0"
+                            }
+                            'Tls11' {
+                                $SecurityProtocol[$i] = "TLS 1.1"
+                            }
+                            'Tls12' {
+                                $SecurityProtocol[$i] = "TLS 1.2"
+                            }
+                            'Tls13' {
+                                $SecurityProtocol[$i] = "TLS 1.3"
+                            }
+                            Default {}
+                        }
+                    }
+                    ConfigurationCheck "SecurityProtocol" $SecurityProtocol "eq" "TLS 1.2"
+                }
+
                 if ($null -eq $SystemDefaultTlsVersions) {
                     ConfigurationCheck "SystemDefaultTlsVersions" "Registry key not existent" "info" "1"
                 }
@@ -726,8 +816,8 @@ function Create-HTMLBody {
             #Skip if DSC-ConfigurationManager Refresh Mode is "Disabled"
             $dscStatus = $null
             $lcmConfigs = Get-DscLocalConfigurationManager
-            if($lcmConfigs.RefreshMode -ne "Disabled"){
-                while($lcmConfigs.LCMState -ne "Idle"){
+            if ($lcmConfigs.RefreshMode -ne "Disabled") {
+                while ($lcmConfigs.LCMState -ne "Idle") {
                     Start-Sleep -Seconds 5
                     Write-Host "LCM is in status '$($lcmConfigs.LCMStateDetail)', waiting..."
                     $lcmConfigs = Get-DscLocalConfigurationManager
@@ -800,7 +890,7 @@ function Create-HTMLBody {
 
         #Service Check
         htmlElement 'table' @{} {
-            htmlElement 'thead' @{} {ConfigurationCheck
+            htmlElement 'thead' @{} { ConfigurationCheck
                 htmlElement 'tr' @{} {
                     htmlElement 'th' @{class = "informationRow" } { "Service Check" }
                     htmlElement 'th' @{class = "informationRow" } { "Target Configuration" }
@@ -1021,10 +1111,10 @@ function Create-HTMLBody {
         }
         htmlElement 'p' @{} { "*Excluded the following EventIDs as they are not relevant:" }
         htmlElement 'ul' @{} {    
-            htmlElement 'li' @{} {"DSC:             4252"}  
-            htmlElement 'li' @{} {"PowerShell:       300"}    
-            htmlElement 'li' @{} {"WindowsDefender: 1002"}    
-            htmlElement 'li' @{} {"WindowsDefender: 2001"}   
+            htmlElement 'li' @{} { "DSC:             4252" }  
+            htmlElement 'li' @{} { "PowerShell:       300" }    
+            htmlElement 'li' @{} { "WindowsDefender: 1002" }    
+            htmlElement 'li' @{} { "WindowsDefender: 2001" }   
         }
     }
 
@@ -1039,8 +1129,7 @@ if (!(isAdmin)) {
 }
 else {
     Write-Host "Fetching information, please wait..."
-    if(-not [string]::IsNullOrWhiteSpace($OutputPath) -and (Test-Path -PathType Container $OutputPath))
-    {
+    if (-not [string]::IsNullOrWhiteSpace($OutputPath) -and (Test-Path -PathType Container $OutputPath)) {
         $Path = $OutputPath
     }
 
