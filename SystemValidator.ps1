@@ -827,6 +827,24 @@ function Create-HTMLBody {
                 }
             }
             htmlElement 'tbody' @{} {
+                $filterLine = winrm get winrm/config/service | Where-Object { $_ -match "IPv6Filter" }
+                $v6Filter = $filterLine -replace ".*IPv6Filter\s*=\s*", ""
+                if ($v6Filter -match "IPv6Filter") {
+                    $v6Filter = ""
+                }
+                $IPv6reg = Get-ItemPropertyValue -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters" -Name DisabledComponents -ErrorAction SilentlyContinue
+                if ($IPv6reg -ne 255 -or $null -eq $IPv6reg) {
+                    $IPv6 = $true
+                }
+                else {
+                    $IPv6 = $false
+                }
+                if ($IPv6) {
+                    ConfigurationCheck "IPv6 Filter" $v6Filter "eq" "*"
+                }
+                else {
+                    ConfigurationCheck "IPv6 Filter" $v6Filter "info" "IPv6 is disabled"
+                }
                 $hostname = $(hostname)
                 $testWSMan = Test-WSMan -computername $hostname -ErrorVariable "wmitest" -Authentication Negotiate
                 # Run the WinRM command for ipv4/ipv6 filter
