@@ -827,13 +827,23 @@ function Create-HTMLBody {
                 }
             }
             htmlElement 'tbody' @{} {
-                $object = Get-WSManInstance -ResourceURI winrm/config/Listener -Enumerate
-                $IPv6 = $($object).ListeningOn | Where-Object { $_ -ne '::1' -and $_ -like '*:*' }
-                if ($IPv6) {
-                    ConfigurationCheck "IPv6 Filter" $object.Address "eq" "*"
+                $filterLine = winrm get winrm/config/service | Where-Object { $_ -match "IPv6Filter" }
+                $v6Filter = $filterLine -replace ".*IPv6Filter\s*=\s*", ""
+                if ($v6Filter -match "IPv6Filter") {
+                    $v6Filter = ""
+                }
+                $IPv6reg = Get-ItemPropertyValue -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters" -Name DisabledComponents -ErrorAction SilentlyContinue
+                if ($IPv6reg -ne 255 -or $null -eq $IPv6reg) {
+                    $IPv6 = $true
                 }
                 else {
-                    ConfigurationCheck "IPv6 Filter" $object.Address "info" "IPv6 is disabled"
+                    $IPv6 = $false
+                }
+                if ($IPv6) {
+                    ConfigurationCheck "IPv6 Filter" $v6Filter "eq" "*"
+                }
+                else {
+                    ConfigurationCheck "IPv6 Filter" $v6Filter "info" "IPv6 is disabled"
                 }
                 $hostname = $(hostname)
                 $testWSMan = Test-WSMan -computername $hostname -ErrorVariable "wmitest" -Authentication Negotiate
